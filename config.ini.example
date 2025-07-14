@@ -1,0 +1,26 @@
+# Configuration file for Wintermute GoApp
+# Copy this file to config.ini and replace the placeholder values with your actual API keys
+# DO NOT commit actual API keys to version control
+
+[openai]
+    # Add your OpenAI api key here
+    apikey=
+
+[wintermute-apikey]
+    # The wintermute api key
+    key=
+
+[database]
+    # SQLite database file path
+    file=database.sqlite
+
+[loadbalancer]
+    # Load balancer configuration, leave the default values here if you are running with an openai api key
+    port=11435
+    endpoints=0.0.0.0
+
+[security]
+    # Security configuration
+    # Set to 'false' to enable more reports and POC exploits to back them up
+    # Default is 'true' to ignore vuln classes that are often false positives
+    no_exploits=true

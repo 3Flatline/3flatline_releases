@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>3Flatline - Vulnerability Scanner</title>
+        <link rel="stylesheet" href="css/styles.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        />
+    </head>
+    <body>
+        <header>
+            <div class="container">
+                <h1><i class="fas fa-shield-alt"></i> 3Flatline</h1>
+                <p>ML exploit engine</p>
+            </div>
+        </header>
+
+        <main class="container">
+            <section id="dashboard" class="card">
+                <h2>Dashboard</h2>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h3>Total Tasks</h3>
+                        <p id="total-tasks">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending</h3>
+                        <p id="pending-tasks">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Processing</h3>
+                        <p id="processing-tasks">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Completed</h3>
+                        <p id="completed-tasks">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Failed</h3>
+                        <p id="failed-tasks">-</p>
+                    </div>
+                    <div class="stat-card highlight">
+                        <h3>Vulnerabilities</h3>
+                        <p id="vulnerabilities-count">-</p>
+                    </div>
+                </div>
+                <div class="dashboard-actions">
+                    <button id="export-markdown" class="btn primary">
+                        <i class="fas fa-file-export"></i> Export to Markdown
+                    </button>
+                    <a href="details.html" class="btn secondary">
+                        <i class="fas fa-chart-bar"></i> View Vulnerability
+                        Details
+                    </a>
+                </div>
+            </section>
+
+            <section id="scan-section" class="card">
+                <h2>Scan Files</h2>
+                <div class="scan-options">
+                    <div class="scan-option">
+                        <h3>Scan Individual File</h3>
+                        <form id="scan-file-form">
+                            <div class="form-group">
+                                <label for="file-path">File Path:</label>
+                                <input
+                                    type="text"
+                                    id="file-path"
+                                    placeholder="Enter absolute path to file"
+                                    required
+                                />
+                            </div>
+                            <button type="submit" class="btn primary">
+                                <i class="fas fa-search"></i> Scan File
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="scan-option">
+                        <h3>Scan Directory</h3>
+                        <form id="scan-directory-form">
+                            <div class="form-group">
+                                <label for="directory-path"
+                                    >Directory Path:</label
+                                >
+                                <input
+                                    type="text"
+                                    id="directory-path"
+                                    placeholder="Enter absolute path to directory"
+                                />
+                                <div
+                                    id="directory-path-validation"
+                                    class="validation-message"
+                                >
+                                    Please enter a directory path or select a
+                                    directory below
+                                </div>
+                            </div>
+                            <button
+                                type="submit"
+                                id="scan-directory-btn"
+                                class="btn primary"
+                            >
+                                <i class="fas fa-folder-open"></i> Scan
+                                Directory
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div id="scan-progress" class="hidden">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: 0%"></div>
+                    </div>
+                    <p class="scan-status">
+                        Scanning files... <span id="scan-status-text">0%</span>
+                    </p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="container">
+                <p>&copy; 3Flatline Vulnerability Scanner</p>
+            </div>
+        </footer>
+
+        <script src="js/app.js"></script>
+    </body>
+</html>

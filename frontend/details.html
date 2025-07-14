@@ -1,0 +1,1610 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Vulnerability Management Dashboard</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <script src="https://unpkg.com/viz.js@2.1.2/viz.js"></script>
+        <script src="https://unpkg.com/viz.js@2.1.2/full.render.js"></script>
+        <style>
+            .files-sidebar {
+                border-right: 1px solid #dee2e6;
+                height: calc(100vh - 100px);
+                overflow-y: auto;
+            }
+            .details-panel {
+                height: calc(100vh - 100px);
+                overflow-y: auto;
+            }
+            .file-item {
+                cursor: pointer;
+                padding: 10px;
+                border-bottom: 1px solid #eee;
+            }
+            .file-item:hover {
+                background-color: #f8f9fa;
+            }
+            .file-item.active {
+                background-color: #e9ecef;
+            }
+            .vuln-item {
+                cursor: pointer;
+                padding: 8px 8px 8px 20px;
+                border-bottom: 1px solid #eee;
+            }
+            .vuln-item:hover {
+                background-color: #f8f9fa;
+            }
+            .vuln-item.active {
+                background-color: #e9ecef;
+            }
+            .severity-low {
+                color: #4caf50;
+            }
+            .severity-medium {
+                color: #ff9800;
+            }
+            .severity-high {
+                color: #f44336;
+            }
+            .severity-critical {
+                color: #b71c1c;
+            }
+            .pre-wrap {
+                white-space: pre-line;
+            }
+            .status-circle {
+                display: inline-block;
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                margin-right: 8px;
+            }
+            .markdown-content img {
+                max-width: 100%;
+            }
+            .markdown-content pre {
+                background-color: #f5f5f5;
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+            .markdown-content code {
+                background-color: #f5f5f5;
+                padding: 2px 4px;
+                border-radius: 3px;
+            }
+            .status-circle.low {
+                background-color: #4caf50;
+            }
+            .status-circle.medium {
+                background-color: #ff9800;
+            }
+            .status-circle.high {
+                background-color: #f44336;
+            }
+            .status-circle.critical {
+                background-color: #b71c1c;
+            }
+            .loading {
+                text-align: center;
+                padding: 20px;
+            }
+            .error-message {
+                color: #f44336;
+                padding: 10px;
+                border: 1px solid #f44336;
+                border-radius: 4px;
+                margin-bottom: 10px;
+            }
+            .vulnerability-list {
+                display: none;
+            }
+            .vulnerability-list.show {
+                display: block;
+            }
+            .no-details {
+                display: flex;
+                height: 100%;
+                align-items: center;
+                justify-content: center;
+                color: #6c757d;
+                font-style: italic;
+            }
+            .graph-container {
+                background-color: #f8f9fa;
+                padding: 10px;
+                border-radius: 4px;
+                margin-bottom: 5px;
+                white-space: pre-wrap;
+                font-family: monospace;
+                font-size: 14px;
+                border: 1px solid #ddd;
+            }
+            .graph-container pre {
+                margin: 0;
+                background-color: transparent;
+                border: none;
+                line-height: 1.5;
+            }
+            .graph-container code {
+                color: #333;
+            }
+            .graph-visualization {
+                width: 100%;
+                overflow: auto;
+                background-color: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                padding: 10px;
+                margin-top: 15px;
+            }
+            .graph-tabs .nav-link {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.875rem;
+            }
+            .graph-render-error {
+                color: #dc3545;
+                padding: 10px;
+                margin-top: 10px;
+                background-color: #f8d7da;
+                border-radius: 4px;
+                border: 1px solid #f5c6cb;
+            }
+            .exploit-item {
+                background-color: #f8f9fa;
+                padding: 10px;
+                margin-bottom: 10px;
+                border-left: 3px solid #007bff;
+                border-radius: 0 4px 4px 0;
+            }
+            .exploit-date {
+                font-size: 0.85rem;
+                color: #6c757d;
+                margin-bottom: 5px;
+            }
+            .exploit-content {
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+            .exploit-content pre {
+                background-color: #f5f5f5;
+                font-family: monospace;
+                padding: 10px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+                white-space: pre-wrap;
+                overflow-x: auto;
+                max-height: 400px;
+                border: 1px solid #ddd;
+            }
+            .exploit-content code {
+                font-family: monospace;
+                background-color: #f5f5f5;
+                padding: 2px 4px;
+                border-radius: 3px;
+                font-size: 0.9em;
+            }
+            .exploits-loading {
+                text-align: center;
+                color: #6c757d;
+                padding: 15px;
+            }
+            .no-exploits {
+                color: #6c757d;
+                font-style: italic;
+                padding: 10px;
+            }
+            .tab-content {
+                padding-top: 15px;
+            }
+            .json-graph-node {
+                fill: #4a90e2;
+                stroke: #2c5aa0;
+                stroke-width: 2px;
+            }
+            .json-graph-edge {
+                stroke: #2c5aa0;
+                stroke-width: 1.5px;
+            }
+            .json-conversion-info {
+                background-color: #e3f2fd;
+                border: 1px solid #90caf9;
+                border-radius: 4px;
+                padding: 8px;
+                margin-bottom: 10px;
+                font-size: 0.875rem;
+            }
+            .treesitter-graph-node {
+                stroke-width: 2px;
+            }
+            .treesitter-graph-edge {
+                stroke-width: 1.5px;
+                marker-end: url(#arrowhead);
+            }
+            .graph-legend {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 10px;
+                margin-bottom: 10px;
+                font-size: 0.8rem;
+            }
+            .legend-item {
+                display: inline-flex;
+                align-items: center;
+                margin-right: 15px;
+                margin-bottom: 5px;
+            }
+            .legend-color {
+                width: 12px;
+                height: 12px;
+                border-radius: 2px;
+                margin-right: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container-fluid mt-3">
+            <h1 class="mb-4">Vulnerability Management Dashboard</h1>
+            <div id="errorContainer"></div>
+
+            <div class="row">
+                <!-- Left sidebar with files -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <strong>Files with Vulnerabilities</strong>
+                        </div>
+                        <div id="fileListContainer" class="files-sidebar">
+                            <div id="loadingContainer" class="loading">
+                                Loading vulnerabilities...
+                            </div>
+                            <div id="fileList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right panel for vulnerability details -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <strong>Vulnerability Details</strong>
+                        </div>
+                        <div id="detailsContainer" class="details-panel">
+                            <div class="no-details">
+                                Select a vulnerability to view details
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/lib/marked.umd.min.js"></script>
+        <script>
+            // Configure marked options
+            const markedOptions = {
+                breaks: true,
+                gfm: true,
+                headerIds: false,
+            };
+
+            // Global state to store vulnerability data
+            let vulnerabilityData = {};
+            let selectedFile = null;
+            let selectedVulnerability = null;
+            let exploitsData = {};
+
+            // Fetch vulnerability data and render the UI
+            async function loadVulnerabilities() {
+                const loadingContainer =
+                    document.getElementById("loadingContainer");
+                const errorContainer =
+                    document.getElementById("errorContainer");
+
+                try {
+                    // Fetch all vulnerabilities sorted by severity
+                    const response = await fetch(
+                        "/api/vulnerabilities/by-severity",
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(`API returned ${response.status}`);
+                    }
+
+                    const vulnerabilities = await response.json();
+                    console.log("Vulnerabilities loaded:", vulnerabilities);
+
+                    // Group vulnerabilities by file
+                    vulnerabilityData = vulnerabilities.reduce((acc, vuln) => {
+                        // Extract filename from path or use function name if available
+                        const key = vuln.file_name || "Unknown";
+                        if (!acc[key]) {
+                            acc[key] = [];
+                        }
+                        acc[key].push(vuln);
+                        return acc;
+                    }, {});
+
+                    loadingContainer.style.display = "none";
+                    renderFileList(vulnerabilityData);
+                } catch (error) {
+                    console.error("Error fetching vulnerabilities:", error);
+                    loadingContainer.style.display = "none";
+                    errorContainer.innerHTML = `
+                        <div class="error-message">
+                            Error loading vulnerabilities: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+
+            // Map severity to a standardized category
+            function mapSeverity(sev) {
+                // If it's a number or numeric string
+                if (!isNaN(sev)) {
+                    const num = parseInt(sev);
+                    if (num >= 8) return "critical";
+                    if (num >= 6) return "high";
+                    if (num >= 4) return "medium";
+                    return "low";
+                }
+
+                // If it's already one of our categories
+                const normalized = sev.toLowerCase();
+                if (
+                    ["critical", "high", "medium", "low"].includes(normalized)
+                ) {
+                    return normalized;
+                }
+
+                // Default mapping for other string values
+                if (normalized.includes("critical")) return "critical";
+                if (normalized.includes("high")) return "high";
+                if (normalized.includes("medium")) return "medium";
+                return "low";
+            }
+
+            // Get highest severity for a list of vulnerabilities
+            function getHighestSeverity(vulns) {
+                let maxSeverity = "low";
+                vulns.forEach((v) => {
+                    const mappedSeverity = mapSeverity(v.Severity || "low");
+                    if (mappedSeverity === "critical") maxSeverity = "critical";
+                    else if (
+                        mappedSeverity === "high" &&
+                        maxSeverity !== "critical"
+                    )
+                        maxSeverity = "high";
+                    else if (
+                        mappedSeverity === "medium" &&
+                        maxSeverity !== "critical" &&
+                        maxSeverity !== "high"
+                    )
+                        maxSeverity = "medium";
+                });
+                return maxSeverity;
+            }
+
+            // Render the file list in the left sidebar
+            function renderFileList(vulnByFile) {
+                const fileList = document.getElementById("fileList");
+
+                if (Object.keys(vulnByFile).length === 0) {
+                    fileList.innerHTML =
+                        '<div class="alert alert-info m-2">No vulnerabilities found.</div>';
+                    return;
+                }
+
+                fileList.innerHTML = "";
+
+                Object.entries(vulnByFile).forEach(([file, vulns]) => {
+                    const maxSeverity = getHighestSeverity(vulns);
+
+                    const fileItem = document.createElement("div");
+                    fileItem.className = "file-item";
+                    fileItem.dataset.file = file;
+                    fileItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="status-circle ${maxSeverity}"></span>
+                                <span>${file}</span>
+                            </div>
+                            <span class="badge bg-secondary">${vulns.length}</span>
+                        </div>
+                    `;
+
+                    // Create a container for vulnerability items
+                    const vulnListContainer = document.createElement("div");
+                    vulnListContainer.className = "vulnerability-list";
+                    vulnListContainer.id = `vulns-${file.replace(/[^a-zA-Z0-9]/g, "-")}`;
+
+                    // Add vulnerability items to the container
+                    vulns.forEach((vuln, index) => {
+                        const mappedSeverity = mapSeverity(
+                            vuln.Severity || "low",
+                        );
+                        const vulnItem = document.createElement("div");
+                        vulnItem.className = "vuln-item";
+                        vulnItem.dataset.index = index;
+                        vulnItem.dataset.file = file;
+                        vulnItem.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="status-circle ${mappedSeverity}"></span>
+                                    <span>${vuln.vuln_class || "Unknown Issue"}</span>
+                                </div>
+                                <span class="severity-${mappedSeverity}">${vuln.Severity || "Low"}</span>
+                            </div>
+                        `;
+
+                        vulnItem.addEventListener("click", function () {
+                            // Mark this vulnerability as selected
+                            document
+                                .querySelectorAll(".vuln-item")
+                                .forEach((el) => el.classList.remove("active"));
+                            vulnItem.classList.add("active");
+
+                            // Display the vulnerability details
+                            selectedVulnerability = { file, index };
+                            displayVulnerabilityDetails(file, index);
+                        });
+
+                        vulnListContainer.appendChild(vulnItem);
+                    });
+
+                    fileItem.addEventListener("click", function () {
+                        // Toggle the display of the vulnerability list for this file
+                        const currentlySelected =
+                            fileItem.classList.contains("active");
+
+                        // Close all other open lists
+                        document
+                            .querySelectorAll(".file-item")
+                            .forEach((el) => el.classList.remove("active"));
+                        document
+                            .querySelectorAll(".vulnerability-list")
+                            .forEach((el) => el.classList.remove("show"));
+
+                        // If this wasn't the selected one, open it
+                        if (!currentlySelected) {
+                            fileItem.classList.add("active");
+                            vulnListContainer.classList.add("show");
+                            selectedFile = file;
+                        } else {
+                            selectedFile = null;
+                        }
+                    });
+
+                    fileList.appendChild(fileItem);
+                    fileList.appendChild(vulnListContainer);
+                });
+            }
+
+            // Process text content to ensure code blocks are properly formatted
+            function processMarkdownContent(content) {
+                if (!content) return "";
+
+                // If the content already has markdown code blocks, return as is
+                if (content.includes("```")) {
+                    return content;
+                }
+
+                // Otherwise, try to detect if this is just code and wrap it in a code block
+                // Check if it contains programming keywords or syntax that suggests it's code
+                const codeIndicators = [
+                    "function",
+                    "return",
+                    "if",
+                    "else",
+                    "for",
+                    "while",
+                    "class",
+                    "var",
+                    "let",
+                    "const",
+                    "import",
+                    "export",
+                    ";",
+                    "{",
+                    "}",
+                    "()",
+                    "=>",
+                    "#!/",
+                    "public",
+                    "private",
+                    "def ",
+                    "async",
+                    "await",
+                ];
+
+                let isLikelyCode = false;
+                for (const indicator of codeIndicators) {
+                    if (content.includes(indicator)) {
+                        isLikelyCode = true;
+                        break;
+                    }
+                }
+
+                if (isLikelyCode) {
+                    // Try to determine language based on content
+                    let lang = "";
+                    if (
+                        content.includes("function") &&
+                        (content.includes("{") || content.includes("=>"))
+                    ) {
+                        lang = "javascript";
+                    } else if (
+                        content.includes("def ") &&
+                        content.includes(":")
+                    ) {
+                        lang = "python";
+                    } else if (
+                        content.includes("package") &&
+                        content.includes("func")
+                    ) {
+                        lang = "go";
+                    }
+
+                    return "```" + lang + "\n" + content + "\n```";
+                }
+
+                return content;
+            }
+
+            // Fetch exploits for a vulnerability
+            // Convert JSON callstack/tree data to DOT format
+            function convertJsonToDot(jsonData) {
+                try {
+                    const data =
+                        typeof jsonData === "string"
+                            ? JSON.parse(jsonData)
+                            : jsonData;
+
+                    let dotGraph = "digraph CallStack {\n";
+                    dotGraph += "  rankdir=TB;\n";
+                    dotGraph +=
+                        '  graph [fontname="Arial", fontsize=12, splines=ortho];\n';
+                    dotGraph +=
+                        '  node [shape=box, style="filled,rounded", fillcolor="#4a90e2", fontcolor=white, fontname="Arial", fontsize=11];\n';
+                    dotGraph +=
+                        '  edge [color="#2c5aa0", fontname="Arial", fontsize=10];\n\n';
+
+                    // Check if this is TreeSitter format with nodes and edges arrays
+                    if (
+                        data.nodes &&
+                        Array.isArray(data.nodes) &&
+                        data.edges &&
+                        Array.isArray(data.edges)
+                    ) {
+                        return convertTreeSitterToDot(data);
+                    }
+
+                    let nodeCounter = 0;
+                    const nodeMap = new Map();
+
+                    function addNode(node, parentId = null, depth = 0) {
+                        const nodeId = `node_${nodeCounter++}`;
+                        let label = "";
+                        let additionalInfo = "";
+
+                        // Handle different node structures for callstacks
+                        if (typeof node === "string") {
+                            label = node;
+                        } else if (typeof node === "object" && node !== null) {
+                            // Try various common callstack properties
+                            if (node.function_name || node.function) {
+                                label = node.function_name || node.function;
+                                if (node.file || node.filename) {
+                                    additionalInfo = `\\n${node.file || node.filename}`;
+                                }
+                                if (node.line || node.line_number) {
+                                    additionalInfo += `:${node.line || node.line_number}`;
+                                }
+                            } else if (node.method || node.method_name) {
+                                label = node.method || node.method_name;
+                                if (node.class || node.class_name) {
+                                    label = `${node.class || node.class_name}.${label}`;
+                                }
+                            } else if (node.name) {
+                                label = node.name;
+                            } else if (node.call || node.call_name) {
+                                label = node.call || node.call_name;
+                            } else if (node.symbol) {
+                                label = node.symbol;
+                            } else if (node.id) {
+                                label = node.id;
+                            } else if (node.value) {
+                                label = node.value;
+                            } else if (node.description) {
+                                label = node.description;
+                            } else if (node.title) {
+                                label = node.title;
+                            } else {
+                                // Try to extract any string-like property
+                                const keys = Object.keys(node);
+                                const stringKey = keys.find(
+                                    (key) =>
+                                        typeof node[key] === "string" &&
+                                        node[key].length > 0 &&
+                                        node[key].length < 100,
+                                );
+                                label = stringKey ? node[stringKey] : "Unknown";
+                            }
+                        } else {
+                            label = String(node);
+                        }
+
+                        // Clean and format label for DOT format
+                        label = String(label)
+                            .replace(/"/g, '\\"')
+                            .replace(/\n/g, "\\n")
+                            .replace(/\r/g, "")
+                            .substring(0, 50); // Limit length for readability
+
+                        const fullLabel = label + additionalInfo;
+
+                        // Color nodes differently based on depth
+                        let nodeColor = "#4a90e2";
+                        if (depth === 0)
+                            nodeColor = "#e74c3c"; // Root nodes in red
+                        else if (depth === 1)
+                            nodeColor = "#f39c12"; // First level in orange
+                        else if (depth > 3) nodeColor = "#95a5a6"; // Deep nodes in gray
+
+                        dotGraph += `  ${nodeId} [label="${fullLabel}", fillcolor="${nodeColor}"];\n`;
+
+                        if (parentId) {
+                            dotGraph += `  ${parentId} -> ${nodeId};\n`;
+                        }
+
+                        // Handle different structures for children/nested calls
+                        let childrenProcessed = false;
+
+                        if (node && typeof node === "object") {
+                            // Try various common patterns for child nodes
+                            const childArrays = [
+                                node.children,
+                                node.calls,
+                                node.nested,
+                                node.callers,
+                                node.callees,
+                                node.steps,
+                                node.stack,
+                                node.trace,
+                                node.sub_calls,
+                                node.subcalls,
+                                node.next,
+                            ];
+
+                            for (const childArray of childArrays) {
+                                if (
+                                    Array.isArray(childArray) &&
+                                    childArray.length > 0
+                                ) {
+                                    childArray.forEach((child) =>
+                                        addNode(child, nodeId, depth + 1),
+                                    );
+                                    childrenProcessed = true;
+                                    break;
+                                }
+                            }
+
+                            // If no array found, look for object properties that might be children
+                            if (!childrenProcessed) {
+                                const childObjects = Object.values(node).filter(
+                                    (val) =>
+                                        val &&
+                                        typeof val === "object" &&
+                                        !Array.isArray(val) &&
+                                        val !== node, // Avoid circular references
+                                );
+
+                                childObjects.forEach((child) =>
+                                    addNode(child, nodeId, depth + 1),
+                                );
+                            }
+                        }
+
+                        // Special handling for arrays at top level
+                        if (Array.isArray(node)) {
+                            node.forEach((child) =>
+                                addNode(child, nodeId, depth + 1),
+                            );
+                        }
+
+                        return nodeId;
+                    }
+
+                    // Handle different top-level structures
+                    if (Array.isArray(data)) {
+                        if (data.length === 1) {
+                            // Single item array - treat as root
+                            addNode(data[0]);
+                        } else {
+                            // Multiple items - create virtual root
+                            const rootId = addNode("Call Stack Root");
+                            data.forEach((item) => addNode(item, rootId, 1));
+                        }
+                    } else if (data && typeof data === "object") {
+                        // Check if this looks like a single callstack entry
+                        const hasCallstackProps = [
+                            "function",
+                            "function_name",
+                            "method",
+                            "call",
+                            "name",
+                        ].some((prop) => data.hasOwnProperty(prop));
+
+                        if (hasCallstackProps) {
+                            addNode(data);
+                        } else {
+                            // Treat as container with multiple potential entry points
+                            const rootId = addNode("Call Stack");
+                            Object.entries(data).forEach(([key, value]) => {
+                                if (
+                                    value &&
+                                    (typeof value === "object" ||
+                                        Array.isArray(value))
+                                ) {
+                                    addNode(value, rootId, 1);
+                                }
+                            });
+                        }
+                    } else {
+                        addNode(data);
+                    }
+
+                    dotGraph += "}";
+                    return dotGraph;
+                } catch (error) {
+                    console.error("Error converting JSON to DOT:", error);
+                    // Provide more specific error information
+                    if (error.name === "SyntaxError") {
+                        console.error("Invalid JSON syntax in graph data");
+                    } else if (error.message.includes("Maximum call stack")) {
+                        console.error(
+                            "JSON structure too deeply nested for conversion",
+                        );
+                    }
+                    return null;
+                }
+            }
+
+            // Convert TreeSitter format (nodes + edges arrays) to DOT format
+            function convertTreeSitterToDot(data) {
+                try {
+                    let dotGraph = "digraph CallStack {\n";
+                    dotGraph += "  rankdir=TB;\n";
+                    dotGraph +=
+                        '  graph [fontname="Arial", fontsize=12, splines=ortho];\n';
+                    dotGraph +=
+                        '  node [shape=box, style="filled,rounded", fillcolor="#4a90e2", fontcolor=white, fontname="Arial", fontsize=11];\n';
+                    dotGraph +=
+                        '  edge [color="#2c5aa0", fontname="Arial", fontsize=10];\n\n';
+
+                    // Create nodes
+                    const nodeIdMap = new Map();
+                    data.nodes.forEach((node, index) => {
+                        const nodeId = `node_${node.id || index}`;
+                        nodeIdMap.set(node.id || index, nodeId);
+
+                        let label =
+                            node.function ||
+                            node.name ||
+                            `Node ${node.id || index}`;
+
+                        // Add arguments if available, limit to 2 for readability
+                        if (
+                            node.arguments &&
+                            Array.isArray(node.arguments) &&
+                            node.arguments.length > 0
+                        ) {
+                            const argsStr = node.arguments
+                                .slice(0, 2)
+                                .map((arg) => {
+                                    // Truncate long arguments
+                                    const argStr = String(arg);
+                                    return argStr.length > 15
+                                        ? argStr.substring(0, 15) + "..."
+                                        : argStr;
+                                })
+                                .join(", ");
+                            const moreArgs =
+                                node.arguments.length > 2 ? "..." : "";
+                            label += `(${argsStr}${moreArgs})`;
+                        } else if (node.function !== "<module>") {
+                            label += "()";
+                        }
+
+                        // Add file info if available
+                        let additionalInfo = "";
+                        if (node.file) {
+                            const fileName = node.file.split("/").pop();
+                            additionalInfo += `\\n📁 ${fileName}`;
+                        }
+
+                        // Clean label for DOT format
+                        label = label
+                            .replace(/"/g, '\\"')
+                            .replace(/\n/g, "\\n")
+                            .replace(/\r/g, "")
+                            .substring(0, 80); // Increased length for function names
+
+                        const fullLabel = label + additionalInfo;
+
+                        // Enhanced color coding and node styling
+                        let nodeColor = "#4a90e2";
+                        let nodeShape = "box";
+                        let nodeStyle = "filled,rounded";
+
+                        if (node.function === "<module>") {
+                            nodeColor = "#e74c3c"; // Red for module-level calls
+                            nodeShape = "ellipse";
+                        } else if (
+                            node.function &&
+                            node.function.length === 1 &&
+                            node.function.match(/[A-Z]/)
+                        ) {
+                            nodeColor = "#f39c12"; // Orange for single-letter uppercase functions
+                        } else if (node.definition) {
+                            nodeColor = "#2ecc71"; // Green for functions with definitions
+                            nodeStyle = "filled,rounded,bold";
+                        } else if (
+                            node.arguments &&
+                            node.arguments.length > 0
+                        ) {
+                            nodeColor = "#9b59b6"; // Purple for functions with arguments
+                        }
+
+                        // Create tooltip with definition if available
+                        let tooltip = "";
+                        if (node.definition) {
+                            const truncatedDef =
+                                node.definition.length > 100
+                                    ? node.definition.substring(0, 100) + "..."
+                                    : node.definition;
+                            tooltip = `, tooltip="${truncatedDef.replace(/"/g, '\\"')}"`;
+                        }
+
+                        dotGraph += `  ${nodeId} [label="${fullLabel}", fillcolor="${nodeColor}", shape="${nodeShape}", style="${nodeStyle}"${tooltip}];\n`;
+                    });
+
+                    dotGraph += "\n";
+
+                    // Create edges with better styling
+                    data.edges.forEach((edge) => {
+                        const fromNode = nodeIdMap.get(edge.from);
+                        const toNode = nodeIdMap.get(edge.to);
+
+                        if (fromNode && toNode) {
+                            dotGraph += `  ${fromNode} -> ${toNode} [arrowhead=vee, arrowsize=0.8];\n`;
+                        }
+                    });
+
+                    dotGraph += "}";
+                    return dotGraph;
+                } catch (error) {
+                    console.error(
+                        "Error converting TreeSitter format to DOT:",
+                        error,
+                    );
+                    return null;
+                }
+            }
+
+            // Analyze TreeSitter data and provide statistics
+            function analyzeTreeSitterData(data) {
+                const stats = {
+                    totalNodes: data.nodes.length,
+                    totalEdges: data.edges.length,
+                    moduleNodes: 0,
+                    functionsWithDefinitions: 0,
+                    functionsWithArguments: 0,
+                    maxDepth: 0,
+                    rootNodes: [],
+                    leafNodes: [],
+                };
+
+                // Count different types of nodes
+                const nodeMap = new Map();
+                const incomingEdges = new Map();
+                const outgoingEdges = new Map();
+
+                data.nodes.forEach((node) => {
+                    nodeMap.set(node.id, node);
+                    incomingEdges.set(node.id, 0);
+                    outgoingEdges.set(node.id, 0);
+
+                    if (node.function === "<module>") {
+                        stats.moduleNodes++;
+                    }
+                    if (node.definition) {
+                        stats.functionsWithDefinitions++;
+                    }
+                    if (node.arguments && node.arguments.length > 0) {
+                        stats.functionsWithArguments++;
+                    }
+                });
+
+                // Count edges and find root/leaf nodes
+                data.edges.forEach((edge) => {
+                    outgoingEdges.set(
+                        edge.from,
+                        (outgoingEdges.get(edge.from) || 0) + 1,
+                    );
+                    incomingEdges.set(
+                        edge.to,
+                        (incomingEdges.get(edge.to) || 0) + 1,
+                    );
+                });
+
+                // Find root nodes (no incoming edges) and leaf nodes (no outgoing edges)
+                data.nodes.forEach((node) => {
+                    if (incomingEdges.get(node.id) === 0) {
+                        stats.rootNodes.push(node);
+                    }
+                    if (outgoingEdges.get(node.id) === 0) {
+                        stats.leafNodes.push(node);
+                    }
+                });
+
+                return stats;
+            }
+
+            // Format the graph data for better display
+            function formatGraphData(graphData) {
+                if (!graphData) return "";
+
+                // If it already has markdown formatting, return as is
+                if (graphData.includes("```")) {
+                    return graphData;
+                }
+
+                // Check if it's JSON format and try to convert it
+                try {
+                    const parsedData = JSON.parse(graphData);
+
+                    // Detect TreeSitter format specifically
+                    if (
+                        parsedData.nodes &&
+                        Array.isArray(parsedData.nodes) &&
+                        parsedData.edges &&
+                        Array.isArray(parsedData.edges)
+                    ) {
+                        window.currentGraphType = "treesitter";
+                        window.currentGraphData = graphData;
+
+                        // Convert TreeSitter format to DOT
+                        const dotGraph = convertTreeSitterToDot(parsedData);
+                        if (dotGraph) {
+                            window.convertedDotData = dotGraph;
+                            window.jsonConversionSuccess = true;
+                            // Show conversion status for TreeSitter
+                            setTimeout(() => {
+                                const statusElement = document.getElementById(
+                                    "json-conversion-status",
+                                );
+                                const infoElement =
+                                    document.getElementById(
+                                        "graph-format-info",
+                                    );
+                                if (statusElement && infoElement) {
+                                    const stats =
+                                        analyzeTreeSitterData(parsedData);
+                                    statusElement.innerHTML = `
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        TreeSitter format detected - ${stats.totalNodes} nodes, ${stats.totalEdges} edges converted to interactive call graph
+                                    `;
+                                    infoElement.style.display = "none";
+                                    statusElement.style.display = "inline";
+                                }
+                            }, 100);
+                        } else {
+                            window.jsonConversionSuccess = false;
+                            console.warn(
+                                "Failed to convert TreeSitter format to DOT for visualization",
+                            );
+                        }
+                    } else {
+                        // Regular JSON format
+                        window.currentGraphType = "json";
+                        window.currentGraphData = graphData;
+
+                        // Convert to DOT format for visualization
+                        const dotGraph = convertJsonToDot(parsedData);
+                        if (dotGraph) {
+                            window.convertedDotData = dotGraph;
+                            window.jsonConversionSuccess = true;
+                            // Show conversion status
+                            setTimeout(() => {
+                                const statusElement = document.getElementById(
+                                    "json-conversion-status",
+                                );
+                                const infoElement =
+                                    document.getElementById(
+                                        "graph-format-info",
+                                    );
+                                if (statusElement && infoElement) {
+                                    infoElement.style.display = "none";
+                                    statusElement.style.display = "inline";
+                                }
+                            }, 100);
+                        } else {
+                            window.jsonConversionSuccess = false;
+                            console.warn(
+                                "Failed to convert JSON to DOT format for visualization",
+                            );
+                        }
+                    }
+
+                    return (
+                        "```json\n" +
+                        JSON.stringify(parsedData, null, 2) +
+                        "\n```"
+                    );
+                } catch (e) {
+                    // Not JSON, continue with existing logic
+                }
+
+                // Pretty print the graph data
+                let prettyGraphData = prettyPrintGraph(graphData);
+
+                // Store the pretty printed version as a global to access later for visualization
+                window.currentGraphData = prettyGraphData;
+
+                // Wrap in a code block with mermaid or dot language hint if appropriate
+                if (
+                    prettyGraphData.includes("digraph") ||
+                    prettyGraphData.includes("->")
+                ) {
+                    window.currentGraphType = "dot";
+                    return "```dot\n" + prettyGraphData + "\n```";
+                } else if (
+                    prettyGraphData.includes("graph") ||
+                    prettyGraphData.includes("flowchart")
+                ) {
+                    window.currentGraphType = "mermaid";
+                    return "```mermaid\n" + prettyGraphData + "\n```";
+                }
+
+                window.currentGraphType = "text";
+                return "```\n" + prettyGraphData + "\n```";
+            }
+
+            // Pretty print a graph in DOT format or similar
+            function prettyPrintGraph(graphText) {
+                if (!graphText) return "";
+
+                // For DOT language graphs
+                if (graphText.includes("digraph") || graphText.includes("->")) {
+                    return prettyPrintDotGraph(graphText);
+                }
+
+                // For other graph formats
+                return graphText;
+            }
+
+            // Pretty print a DOT language graph
+            function prettyPrintDotGraph(dotText) {
+                // Replace with pretty formatted version
+                let result = "";
+                let indentLevel = 0;
+                let lines = dotText.split(/\n/);
+
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+
+                    // Skip empty lines
+                    if (!line) continue;
+
+                    // Handle opening braces - increase indent after this line
+                    if (line.includes("{") && !line.includes("}")) {
+                        result += "  ".repeat(indentLevel) + line + "\n";
+                        indentLevel++;
+                        continue;
+                    }
+
+                    // Handle closing braces - decrease indent for this line
+                    if (line.includes("}") && !line.includes("{")) {
+                        indentLevel = Math.max(0, indentLevel - 1);
+                        result += "  ".repeat(indentLevel) + line + "\n";
+                        continue;
+                    }
+
+                    // Handle node and edge definitions
+                    if (line.includes("->") || line.includes("--")) {
+                        // Edge definition
+                        let parts = line.split(/\s*(->|--)\s*/);
+                        if (parts.length >= 3) {
+                            let edge = parts[1];
+                            let sourceNode = parts[0].trim();
+                            let targetNode = parts[2].trim();
+                            let attrs = "";
+
+                            // Extract edge attributes if any
+                            if (line.includes("[")) {
+                                attrs = line.substring(line.indexOf("["));
+                            }
+
+                            result +=
+                                "  ".repeat(indentLevel) +
+                                sourceNode +
+                                " " +
+                                edge +
+                                " " +
+                                targetNode +
+                                " " +
+                                attrs +
+                                "\n";
+                            continue;
+                        }
+                    }
+
+                    // Regular line with current indent
+                    result += "  ".repeat(indentLevel) + line + "\n";
+                }
+
+                return result;
+            }
+
+            async function fetchExploits(guid) {
+                // Return cached exploits if available
+                if (exploitsData[guid]) {
+                    return exploitsData[guid];
+                }
+
+                try {
+                    const response = await fetch(
+                        `/api/vulnerability/${guid}/exploits`,
+                    );
+                    if (!response.ok) {
+                        throw new Error(`API returned ${response.status}`);
+                    }
+
+                    const exploits = await response.json();
+                    exploitsData[guid] = exploits;
+                    return exploits;
+                } catch (error) {
+                    console.error(
+                        `Error fetching exploits for ${guid}:`,
+                        error,
+                    );
+                    return [];
+                }
+            }
+
+            // Render the exploits section
+            async function renderExploits(guid, container) {
+                const exploitsContainer = document.createElement("div");
+                exploitsContainer.id = "exploitsContainer";
+                exploitsContainer.innerHTML =
+                    '<div class="exploits-loading">Loading exploits...</div>';
+                container.appendChild(exploitsContainer);
+
+                try {
+                    const exploits = await fetchExploits(guid);
+
+                    if (!exploits || exploits.length === 0) {
+                        exploitsContainer.innerHTML =
+                            '<div class="no-exploits">No exploits available for this vulnerability</div>';
+                        return;
+                    }
+
+                    exploitsContainer.innerHTML = "";
+
+                    exploits.forEach((exploit, index) => {
+                        const exploitItem = document.createElement("div");
+                        exploitItem.className = "exploit-item";
+
+                        // Process exploit content to ensure proper markdown formatting
+                        const processedContent = processMarkdownContent(
+                            exploit.exploit,
+                        );
+
+                        exploitItem.innerHTML = `
+                            <div class="exploit-date">
+                                <strong>Exploit ${index + 1}</strong> - ${exploit.date} ${exploit.time || ""}
+                            </div>
+                            <div class="exploit-content markdown-content">${marked.parse(processedContent, markedOptions)}</div>
+                        `;
+                        exploitsContainer.appendChild(exploitItem);
+                    });
+                } catch (error) {
+                    exploitsContainer.innerHTML = `<div class="alert alert-danger">Error loading exploits: ${error.message}</div>`;
+                }
+            }
+
+            // Display vulnerability details in the right panel
+            function displayVulnerabilityDetails(file, index) {
+                const detailsContainer =
+                    document.getElementById("detailsContainer");
+                const vuln = vulnerabilityData[file][index];
+
+                if (!vuln) {
+                    detailsContainer.innerHTML =
+                        '<div class="no-details">Vulnerability details not found</div>';
+                    return;
+                }
+
+                const mappedSeverity = mapSeverity(vuln.Severity || "low");
+
+                // Create base structure with tabs
+                detailsContainer.innerHTML = `
+                    <div class="p-3">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h3>${vuln.vuln_class || "Unknown Issue"}</h3>
+                            <span class="badge fs-6 severity-${mappedSeverity}">${vuln.Severity || "Low"}</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>File:</strong> ${file}
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Confidence Score:</strong> ${vuln.confidence || "N/A"}
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Function:</strong> <code>${vuln.function || "N/A"}</code>
+                        </div>
+
+                        <ul class="nav nav-tabs" id="vulnDetailsTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="details-tab" data-bs-toggle="tab"
+                                        data-bs-target="#details" type="button" role="tab"
+                                        aria-controls="details" aria-selected="true">Details</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="graph-tab" data-bs-toggle="tab"
+                                        data-bs-target="#graph" type="button" role="tab"
+                                        aria-controls="graph" aria-selected="false">Graph</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="exploits-tab" data-bs-toggle="tab"
+                                        data-bs-target="#exploits" type="button" role="tab"
+                                        aria-controls="exploits" aria-selected="false">Exploits</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="vulnDetailsContent">
+                            <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <strong>Vulnerability Details</strong>
+                                    </div>
+                                    <div class="card-body markdown-content">
+                                        ${vuln.original_result ? marked.parse(processMarkdownContent(vuln.original_result), markedOptions) : "No details available"}
+                                    </div>
+                                </div>
+
+                                ${
+                                    vuln.fix
+                                        ? `
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <strong>Recommended Fix</strong>
+                                    </div>
+                                    <div class="card-body markdown-content">
+                                        ${marked.parse(processMarkdownContent(vuln.fix), markedOptions)}
+                                    </div>
+                                </div>
+                                `
+                                        : ""
+                                }
+                            </div>
+
+                            <div class="tab-pane fade" id="graph" role="tabpanel" aria-labelledby="graph-tab">
+                                ${
+                                    vuln.Graph
+                                        ? `
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>Call Graph</strong>
+                                            <div class="graph-tabs">
+                                                <ul class="nav nav-pills nav-sm" role="tablist">
+                                                    <li class="nav-item" role="presentation">
+                                                        <button class="nav-link active" id="graph-source-tab" data-bs-toggle="pill"
+                                                                data-bs-target="#graph-source" type="button" role="tab">Source</button>
+                                                    </li>
+                                                    <li class="nav-item" role="presentation">
+                                                        <button class="nav-link" id="graph-visual-tab" data-bs-toggle="pill"
+                                                                data-bs-target="#graph-visual" type="button" role="tab">Visualization</button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="tab-content">
+                                            <div class="tab-pane fade show active" id="graph-source" role="tabpanel">
+                                                <div class="graph-container markdown-content">
+                                                    ${marked.parse(formatGraphData(vuln.Graph), markedOptions)}
+                                                </div>
+                                            </div>
+                                            <div class="tab-pane fade" id="graph-visual" role="tabpanel">
+                                                <div id="graph-stats" class="graph-legend" style="display: none;">
+                                                    <strong>Call Graph Statistics:</strong>
+                                                    <div class="mt-2" id="graph-stats-content">
+                                                        <!-- Stats will be populated dynamically -->
+                                                    </div>
+                                                </div>
+                                                <div id="graph-legend" class="graph-legend" style="display: none;">
+                                                    <strong>Legend:</strong>
+                                                    <div class="mt-2">
+                                                        <div class="legend-item">
+                                                            <div class="legend-color" style="background-color: #e74c3c;"></div>
+                                                            <span>Module calls</span>
+                                                        </div>
+                                                        <div class="legend-item">
+                                                            <div class="legend-color" style="background-color: #f39c12;"></div>
+                                                            <span>Single-letter functions</span>
+                                                        </div>
+                                                        <div class="legend-item">
+                                                            <div class="legend-color" style="background-color: #2ecc71;"></div>
+                                                            <span>Functions with definitions</span>
+                                                        </div>
+                                                        <div class="legend-item">
+                                                            <div class="legend-color" style="background-color: #9b59b6;"></div>
+                                                            <span>Functions with arguments</span>
+                                                        </div>
+                                                        <div class="legend-item">
+                                                            <div class="legend-color" style="background-color: #4a90e2;"></div>
+                                                            <span>Other functions</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div id="graph-visualization" class="graph-visualization">
+                                                    <div class="text-center p-3">
+                                                        <div class="spinner-border text-primary" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <p class="mt-2">Rendering graph visualization...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-end mt-2">
+                                            <small class="text-muted">
+                                                <span id="graph-format-info">Graph data is automatically formatted for readability</span>
+                                                <span id="json-conversion-status" class="json-conversion-info" style="display: none;">
+                                                    <i class="fas fa-check-circle text-success"></i> JSON format detected - automatically converted to interactive tree diagram
+                                                </span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                `
+                                        : '<div class="no-exploits">No graph data available for this vulnerability</div>'
+                                }
+                            </div>
+
+                            <div class="tab-pane fade" id="exploits" role="tabpanel" aria-labelledby="exploits-tab">
+                                <!-- Exploits will be loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Load exploits data when the exploits tab is clicked
+                const exploitsTab = document.getElementById("exploits-tab");
+                exploitsTab.addEventListener("click", function () {
+                    const exploitsPane = document.getElementById("exploits");
+                    if (exploitsPane.children.length === 0) {
+                        renderExploits(vuln.guid, exploitsPane);
+                    }
+                });
+
+                // Setup graph visualization when the visualization tab is clicked
+                if (vuln.Graph) {
+                    const graphVisualTab =
+                        document.getElementById("graph-visual-tab");
+                    graphVisualTab.addEventListener("click", function () {
+                        renderGraphVisualization();
+                    });
+                }
+            }
+
+            // Render graph visualization using Viz.js
+            function renderGraphVisualization() {
+                const graphVisContainer = document.getElementById(
+                    "graph-visualization",
+                );
+
+                let graphDataToRender = null;
+
+                // Handle JSON and TreeSitter formats by using converted DOT data
+                if (
+                    (window.currentGraphType === "json" ||
+                        window.currentGraphType === "treesitter") &&
+                    window.convertedDotData
+                ) {
+                    graphDataToRender = window.convertedDotData;
+                } else if (
+                    window.currentGraphType === "dot" &&
+                    window.currentGraphData
+                ) {
+                    graphDataToRender = window.currentGraphData;
+                }
+
+                // Only render if we have graph data that can be visualized
+                if (!graphDataToRender) {
+                    let message =
+                        "Visualization is not available for this graph format.";
+                    let alertType = "alert-info";
+
+                    if (window.currentGraphType === "json") {
+                        if (window.jsonConversionSuccess === false) {
+                            message =
+                                "JSON conversion failed. The JSON structure may be invalid or too complex for visualization.";
+                            alertType = "alert-warning";
+                        } else {
+                            message =
+                                "Unable to convert JSON to DOT format for visualization.";
+                        }
+                    } else if (window.currentGraphType === "treesitter") {
+                        if (window.jsonConversionSuccess === false) {
+                            message =
+                                "TreeSitter format conversion failed. The node/edge structure may be invalid.";
+                            alertType = "alert-warning";
+                        } else {
+                            message =
+                                "Unable to convert TreeSitter format to DOT for visualization.";
+                        }
+                    } else if (window.currentGraphType) {
+                        message = `Visualization is only available for DOT format graphs. The current graph is in ${window.currentGraphType} format.`;
+                    }
+
+                    graphVisContainer.innerHTML = `
+                        <div class="alert ${alertType}">
+                            <i class="fas fa-info-circle"></i> ${message}
+                        </div>
+                    `;
+                    return;
+                }
+
+                try {
+                    // Create a new Viz instance
+                    const viz = new Viz();
+
+                    // Render the DOT graph
+                    viz.renderSVGElement(graphDataToRender)
+                        .then((element) => {
+                            // Clear the container and add the rendered SVG
+                            graphVisContainer.innerHTML = "";
+                            graphVisContainer.appendChild(element);
+
+                            // Show legend and stats for TreeSitter format
+                            if (window.currentGraphType === "treesitter") {
+                                const legend =
+                                    document.getElementById("graph-legend");
+                                const statsDiv =
+                                    document.getElementById("graph-stats");
+                                const statsContent = document.getElementById(
+                                    "graph-stats-content",
+                                );
+
+                                if (legend) {
+                                    legend.style.display = "block";
+                                }
+
+                                if (
+                                    statsDiv &&
+                                    statsContent &&
+                                    window.currentGraphData
+                                ) {
+                                    try {
+                                        const parsedData = JSON.parse(
+                                            window.currentGraphData,
+                                        );
+                                        const stats =
+                                            analyzeTreeSitterData(parsedData);
+
+                                        statsContent.innerHTML = `
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="legend-item">
+                                                        <strong>Total Nodes:</strong> ${stats.totalNodes}
+                                                    </div>
+                                                    <div class="legend-item">
+                                                        <strong>Total Edges:</strong> ${stats.totalEdges}
+                                                    </div>
+                                                    <div class="legend-item">
+                                                        <strong>Root Nodes:</strong> ${stats.rootNodes.length}
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="legend-item">
+                                                        <strong>Module Calls:</strong> ${stats.moduleNodes}
+                                                    </div>
+                                                    <div class="legend-item">
+                                                        <strong>With Definitions:</strong> ${stats.functionsWithDefinitions}
+                                                    </div>
+                                                    <div class="legend-item">
+                                                        <strong>With Arguments:</strong> ${stats.functionsWithArguments}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+
+                                        statsDiv.style.display = "block";
+                                    } catch (e) {
+                                        console.error(
+                                            "Error parsing graph data for stats:",
+                                            e,
+                                        );
+                                    }
+                                }
+                            }
+
+                            // Make the SVG responsive
+                            element.setAttribute("width", "100%");
+                            element.setAttribute("height", "auto");
+
+                            // Add zoom controls
+                            const zoomControls = document.createElement("div");
+                            zoomControls.className = "text-center mt-2";
+                            zoomControls.innerHTML = `
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-secondary" id="graph-zoom-in">Zoom In</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="graph-zoom-out">Zoom Out</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="graph-zoom-reset">Reset</button>
+                                </div>
+                            `;
+                            graphVisContainer.appendChild(zoomControls);
+
+                            // Add zoom functionality
+                            let currentZoom = 1;
+                            document
+                                .getElementById("graph-zoom-in")
+                                .addEventListener("click", () => {
+                                    currentZoom *= 1.2;
+                                    element.style.transform = `scale(${currentZoom})`;
+                                });
+                            document
+                                .getElementById("graph-zoom-out")
+                                .addEventListener("click", () => {
+                                    currentZoom /= 1.2;
+                                    element.style.transform = `scale(${currentZoom})`;
+                                });
+                            document
+                                .getElementById("graph-zoom-reset")
+                                .addEventListener("click", () => {
+                                    currentZoom = 1;
+                                    element.style.transform = "scale(1)";
+                                });
+                        })
+                        .catch((error) => {
+                            console.error("Error rendering graph:", error);
+                            graphVisContainer.innerHTML = `
+                                <div class="graph-render-error">
+                                    <strong>Error rendering graph:</strong> ${error.message}
+                                </div>
+                            `;
+                        });
+                } catch (error) {
+                    console.error(
+                        "Error initializing graph visualization:",
+                        error,
+                    );
+                    graphVisContainer.innerHTML = `
+                        <div class="graph-render-error">
+                            <strong>Error initializing visualization:</strong> ${error.message}
+                        </div>
+                    `;
+                }
+            }
+
+            // Initialize the dashboard
+            loadVulnerabilities();
+        </script>
+    </body>
+</html>
