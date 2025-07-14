@@ -14,8 +14,6 @@ Then run the cli to interact with the server or call the rest API.
 
 `./3flatline-cli`
 
-### Docker install
-
 ### Configuration Setup
 
 To configure the system, you need to create a `config.ini` file. Follow these steps:
