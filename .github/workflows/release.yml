@@ -1,0 +1,133 @@
+name: Create Release
+
+# This workflow runs when a new tag is pushed that matches the pattern 'v*.*.*'
+# For example: v1.0.0, v2.3.4
+on:
+    push:
+        tags:
+            - "v*.*.*"
+
+# Sets permissions for the GITHUB_TOKEN to allow creating a release
+permissions:
+    contents: write
+
+jobs:
+    create-release:
+        runs-on: ubuntu-latest
+        steps:
+            # Step 1: Check out the repository's code with full history for release notes
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            # Step 2: Create zip files for different components
+            - name: Create release packages
+              run: |
+                  # Create release-assets directory
+                  mkdir -p release-assets
+
+                  # Set up error handling
+                  set -e
+
+                  # Log function for better visibility
+                  log() {
+                    echo "::group::$1"
+                    echo "$2"
+                    echo "::endgroup::"
+                  }
+
+                  log "Setting up" "Ensuring executable permissions are preserved for binaries"
+                  chmod +x 3flatline-cli_arm_mac 3flatline-cli_x86_64_linux 3flatline-server_arm_mac 3flatline-server_x86_64_linux
+
+                  # Create zip with all binaries and config example
+                  log "Creating package" "Building 3flatline-complete.zip"
+                  zip -r release-assets/3flatline-complete.zip \
+                    3flatline-cli_arm_mac \
+                    3flatline-cli_x86_64_linux \
+                    3flatline-server_arm_mac \
+                    3flatline-server_x86_64_linux \
+                    config.ini.example \
+                    README.md \
+                    -x "*.git*" "*.github*" "*.DS_Store" "*.gitignore"
+
+                  # Create Mac-specific package
+                  log "Creating package" "Building 3flatline-mac.zip"
+                  zip -r release-assets/3flatline-mac.zip \
+                    3flatline-cli_arm_mac \
+                    3flatline-server_arm_mac \
+                    config.ini.example \
+                    README.md \
+                    -x "*.git*" "*.github*" "*.DS_Store" "*.gitignore"
+
+                  # Create Linux-specific package
+                  log "Creating package" "Building 3flatline-linux.zip"
+                  zip -r release-assets/3flatline-linux.zip \
+                    3flatline-cli_x86_64_linux \
+                    3flatline-server_x86_64_linux \
+                    config.ini.example \
+                    README.md \
+                    -x "*.git*" "*.github*" "*.DS_Store" "*.gitignore"
+
+                  # Create frontend package if it exists
+                  if [ -d "frontend" ]; then
+                    log "Creating package" "Building 3flatline-frontend.zip"
+                    zip -r release-assets/3flatline-frontend.zip frontend \
+                      -x "frontend/*.git*" "frontend/*.github*" "frontend/*.DS_Store" "frontend/*.gitignore" "frontend/node_modules/**/*"
+                  else
+                    log "Skipping" "Frontend directory not found, skipping frontend package"
+                  fi
+
+                  # Create a scripts package if needed
+                  if [ -d "scripts" ]; then
+                    log "Creating package" "Building 3flatline-scripts.zip"
+                    zip -r release-assets/3flatline-scripts.zip scripts \
+                      -x "scripts/*.git*" "scripts/*.github*" "scripts/*.DS_Store" "scripts/*.gitignore"
+                  else
+                    log "Skipping" "Scripts directory not found, skipping scripts package"
+                  fi
+
+                  # Verify the created packages
+                  log "Verifying" "Listing created packages:"
+                  ls -la release-assets/
+
+            # Step 3: Create GitHub Release
+            - name: Create Release
+              uses: ncipollo/release-action@v1
+              with:
+                  # This token is provided by GitHub Actions. No setup is needed.
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  # Path to the files you want to upload as assets
+                  artifacts: "release-assets/*"
+                  # Automatically generates release notes from pull requests and commits
+                  generateReleaseNotes: true
+                  # Draft release (false means it's published immediately)
+                  draft: false
+                  # Set prerelease to true if the tag contains '-beta', '-alpha', or '-rc'
+                  prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
+                  # Set release name to the tag that triggered this workflow
+                  name: ${{ github.ref_name }}
+                  # Add a body to the release
+                  body: |
+                      ## 3flatline Release ${{ github.ref_name }}
+
+                      This release contains:
+
+                      - 3flatline Server and CLI binaries for Mac (ARM) and Linux (x86_64)
+                      - Example configuration file
+                      - Documentation
+                      - Scripts (if applicable)
+                      - Frontend components (if applicable)
+
+                      ### Installation Instructions
+
+                      1. Download the appropriate zip file for your platform
+                      2. Extract the files
+                      3. Make sure the binaries are executable: `chmod +x 3flatline-cli_* 3flatline-server_*`
+                      4. Copy the example config: `cp config.ini.example config.ini`
+                      5. Edit the config file with your API keys
+                      6. Run the server: `./3flatline-server config.ini`
+                      7. Run the CLI: `./3flatline-cli`
+                      8. Visit `localhost:7270` to access the web interface
+
+                      For more details, see the README.md file included in the package.
