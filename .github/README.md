@@ -4,7 +4,7 @@ This directory contains GitHub Actions workflows that automate the release proce
 
 ## Release Workflow
 
-The `release.yml` workflow automatically creates a new GitHub release when a new tag with the format `v*.*.*` is pushed to the repository. For example: `v1.0.0`, `v2.3.4`, etc.
+The `release.yml` workflow automatically creates a new GitHub release when a new tag with the format `v*` is pushed to the repository. For example: `v1.0.0`, `v232`, `v232-beta`, etc.
 
 ### What the workflow does:
 
@@ -27,7 +27,7 @@ A helper script is available to simplify the release process:
 
 ```bash
 # Run from the repository root
-./scripts/create_release.sh 1.2.3
+./scripts/create_release.sh 232
 ```
 
 This will create and push a tag `v1.2.3`, which will trigger the workflow.
@@ -38,10 +38,10 @@ If you prefer to create tags manually:
 
 ```bash
 # Create an annotated tag
-git tag -a v1.2.3 -m "Release v1.2.3"
+git tag -a v232 -m "Release v232"
 
 # Push the tag to GitHub
-git push origin v1.2.3
+git push origin v232
 ```
 
 ### Pre-releases
@@ -50,8 +50,8 @@ Tags containing `-beta`, `-alpha`, or `-rc` will be automatically marked as pre-
 
 ```bash
 # Create a beta release
-git tag -a v1.2.3-beta.1 -m "Beta release v1.2.3-beta.1"
-git push origin v1.2.3-beta.1
+git tag -a v232-beta -m "Beta release v232-beta"
+git push origin v232-beta
 ```
 
 ## Workflow Execution

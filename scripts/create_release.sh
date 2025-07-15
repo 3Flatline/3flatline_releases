@@ -13,7 +13,12 @@ if [ $# -ne 1 ]; then
 fi
 
 VERSION=$1
-TAG="v$VERSION"
+# Check if the version already starts with 'v'
+if [[ $VERSION == v* ]]; then
+    TAG="$VERSION"
+else
+    TAG="v$VERSION"
+fi
 
 # Confirm with the user
 echo "This will create and push a new release tag: $TAG"
@@ -39,5 +44,6 @@ git push origin "$TAG"
 echo "Tag $TAG has been created and pushed."
 echo "The GitHub Action workflow will automatically create the release."
 echo "You can check the progress in the 'Actions' tab of your GitHub repository."
+echo "Note: For the workflow to run, the tag should match the pattern 'v*' (e.g., v232, v1.0.0, v232-beta)."
 
 exit 0

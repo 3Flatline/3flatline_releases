@@ -10,6 +10,8 @@ We follow [Semantic Versioning](https://semver.org/) for version numbering:
 - **MINOR** version when adding functionality in a backward compatible manner
 - **PATCH** version when making backward compatible bug fixes
 
+Note: The project currently uses a simpler version numbering scheme like `v232` and `v232-beta` rather than semantic versioning.
+
 ## Release Workflow
 
 ### 1. Prepare for Release
@@ -28,7 +30,7 @@ Before creating a release:
 Run the helper script from the repository root:
 
 ```bash
-./scripts/create_release.sh 1.2.3
+./scripts/create_release.sh 232
 ```
 
 Replace `1.2.3` with the appropriate version number.
@@ -39,10 +41,10 @@ If you prefer to create tags manually:
 
 ```bash
 # Create an annotated tag
-git tag -a v1.2.3 -m "Release v1.2.3"
+git tag -a v232 -m "Release v232"
 
 # Push the tag to GitHub
-git push origin v1.2.3
+git push origin v232
 ```
 
 ### 3. Monitor the Release Workflow
@@ -68,7 +70,7 @@ Once the workflow completes:
 
 For pre-release versions (alpha, beta, release candidates):
 
-- Use tags like `v1.2.3-beta.1`, `v1.2.3-alpha.2`, or `v1.2.3-rc.1`
+- Use tags like `v232-beta`, `v233-alpha`, or `v234-rc`
 - These will be automatically marked as pre-releases in GitHub
 
 ## Release Artifacts
@@ -96,7 +98,7 @@ If the release workflow fails:
 
 1. Check the workflow logs in the "Actions" tab for error messages
 2. Make necessary corrections
-3. Delete the failed tag: `git tag -d v1.2.3 && git push --delete origin v1.2.3`
+3. Delete the failed tag: `git tag -d v232 && git push --delete origin v232`
 4. Create a new tag and retry
 
 ## Special Release Types
@@ -105,6 +107,6 @@ If the release workflow fails:
 
 For urgent fixes to a stable release:
 
-1. Create a hotfix branch from the release tag: `git checkout -b hotfix/1.2.4 v1.2.3`
+1. Create a hotfix branch from the release tag: `git checkout -b hotfix/233 v232`
 2. Make the necessary fixes
 3. Follow the normal release process, using an incremented patch version

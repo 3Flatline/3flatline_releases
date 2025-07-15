@@ -5,7 +5,7 @@ name: Create Release
 on:
     push:
         tags:
-            - "v*.*.*"
+            - "v*"
 
 # Sets permissions for the GITHUB_TOKEN to allow creating a release
 permissions:
@@ -105,6 +105,7 @@ jobs:
                   draft: false
                   # Set prerelease to true if the tag contains '-beta', '-alpha', or '-rc'
                   prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
+                  # Fallback to tag as-is if it doesn't follow semantic versioning
                   # Set release name to the tag that triggered this workflow
                   name: ${{ github.ref_name }}
                   # Add a body to the release
