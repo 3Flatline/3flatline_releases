@@ -21,6 +21,9 @@ To configure the system, you need to create a `config.ini` file. Follow these st
 
 3. Turn on or off Exploits based on your needs.
 
+### Dependencies
+
+[rizin](https://github.com/rizinorg) must be installe and added to the path to process assembly files.
 
 ## Usage
 
