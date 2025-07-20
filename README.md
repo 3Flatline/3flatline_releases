@@ -28,9 +28,8 @@ To configure the system, you need to create a `config.ini` file. Follow these st
 
 3. Turn on or off Exploits based on your needs.
 
-> [!Important]
-
-> ### Dependencies and Requirements
+> ## Dependencies and Requirements
+>
 > - [rizin](https://github.com/rizinorg) must be installed and added to the path to process assembly files.
 > - [tree-sitter](https://github.com/tree-sitter/tree-sitter)
 > - openAI API key
@@ -88,7 +87,7 @@ To use local models with Ollama:
    [loadbalancer]
        endpoints=localhost,server2
    ```
-> [!Tips]
+
 > ## Assembly best practices
 >
 > 3Flatline will support raw binary executables. It will disassebly them for you and process them. Sometimes the disassembly can have errors and tasks will fail. If you are not getting expected results, disassemble the binary with your preffered tools and scan it as a file.
@@ -107,8 +106,7 @@ When you first run 3flatline-server, it will create a database. If the sever cra
 - Scans resume from where they left off after restarts
 - Completed scans are stored persistently
 
-> [!Tips]
-> ### Database Best Practices
+> ## Database Best Practices
 >
 > **Rename databases** after scans to keep them organized:
 >
