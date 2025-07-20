@@ -4,6 +4,8 @@ Release repositiy and bug tracker for 3flatline cli, server, and community editi
 
 3Flatline is a vulnerability scanning application with automated analysis. It works on source code and binary executables. There are two versions: Community and Enterprise. See features comparison below. You can request a community edition API key at aaron@3flatline.ai
 
+![ScreenShot](./media/screenshot.png)
+
 ## Install Instructions
 
 3Flatline consists of 3 files: the server, the server config, and the cli.
@@ -26,7 +28,7 @@ To configure the system, you need to create a `config.ini` file. Follow these st
 
 ### Dependencies and Requirements
 
-- [rizin](https://github.com/rizinorg) must be installe and added to the path to process assembly files.
+- [rizin](https://github.com/rizinorg) must be installed and added to the path to process assembly files.
 - [tree-sitter](https://github.com/tree-sitter/tree-sitter)
 - openAI API key
 - 3Flatline API key
@@ -121,6 +123,12 @@ When you first run 3flatline-server, it will create a database. If the sever cra
    # Scan project B
    mv database.sqlite projectB.sqlite
    ```
+
+# Media
+
+![cli](./media/cli.gif)
+
+![webapp](./media/webapp.gif)
 
 # Features
 
@@ -237,4 +245,4 @@ Submit bugs at : https://github.com/3Flatline/3flatline_releases
 
 ## Known issues:
 1. The analysis process is constantly creating and deleting tasks as it moves from coarse to fine grained analysis. This reflects in the CLI progress bar sometimes saying 100% complete before the machine creates more tasks.
-1. With exploit/POC feature off, false positives are around 20%. With exploit/POC turned on, False Positives are 0. You are expected to run the generated POCs
+1. With exploit/POC feature off, false positives are around 20%. With exploit/POC turned on, False Positives are 0. You are expected to run the generated POCs to determine which vulnerabilies reports are accurate and which are not.
