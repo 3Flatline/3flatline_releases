@@ -1,6 +1,6 @@
 ![logo](./media/3flatline-logo.png)
 
-# 3Flateline
+# 3Flatline
 
 Release repositiy and bug tracker for 3flatline cli, server, and community edition.
 
