@@ -1,7 +1,5 @@
 import os
-from tree_sitter import Language, Parser
-from tree_sitter_language_pack import get_binding, get_language, get_parser
-from tomllib import load
+from tree_sitter_language_pack import get_parser
 import json
 import sys
 import traceback
@@ -12,11 +10,23 @@ class GraphGenerator:
     def __init__(self, lang):
         self.graph = {"nodes": [], "edges": []}
         self._sources = {}  # file_path -> source bytes
-        self.parser = get_parser(lang.lower())
+
+        # Normalize language name for tree-sitter compatibility
+        lang_normalized = self._normalize_language(lang.lower())
+        self.parser = get_parser(lang_normalized)
         self.language = lang.lower()
         self._node_id_counter = 0
         self._visited_functions = set()
         self._function_definitions = {}  # function_name -> {file_path, definition}
+
+    def _normalize_language(self, lang):
+        """Normalize language names for tree-sitter parser compatibility."""
+        lang_map = {
+            'c++': 'cpp',
+            'objective-c': 'objc',
+            'c#': 'c_sharp',
+        }
+        return lang_map.get(lang, lang)
 
     def build_graph(self, repo_path, function_name, file_path=None):
         """
@@ -50,6 +60,14 @@ class GraphGenerator:
             'python': ['.py'],
             'go': ['.go'],
             'c': ['.c', '.h'],
+            'cpp': ['.cpp', '.cc', '.cxx', '.hpp', '.hxx', '.h'],
+            'c++': ['.cpp', '.cc', '.cxx', '.hpp', '.hxx', '.h'],
+            'objc': ['.m', '.mm', '.h'],
+            'objective-c': ['.m', '.mm', '.h'],
+            'rust': ['.rs'],
+            'verilog': ['.v', '.sv'],
+            'move': ['.mv'],
+            'cairo': ['.cairo'],
             'c#': ['.cs'],
             'solidity': ['.sol'],
             'java': ['.java'],
@@ -74,7 +92,7 @@ class GraphGenerator:
 
                         # Extract function definitions
                         self._extract_function_definitions(file_path, source_bytes)
-                    except Exception as e:
+                    except Exception:
                         # Skip files that can't be read
                         pass
 
@@ -88,84 +106,138 @@ class GraphGenerator:
 
     def _find_all_function_definitions(self, node, source, file_path):
         """Recursively find all function definitions in the file."""
-        # Python function definitions
-        if self.language == 'python' and node.type == 'function_definition':
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                function_name = self._get_node_text(name_node, source)
-                function_def = self._get_node_text(node, source)
-                self._store_function_definition(function_name, file_path, function_def)
-
-        # Go function declarations
-        elif self.language == 'go' and node.type == 'function_declaration':
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                function_name = self._get_node_text(name_node, source)
-                function_def = self._get_node_text(node, source)
-                self._store_function_definition(function_name, file_path, function_def)
-
-        # C function declarations
-        elif self.language == 'c' and node.type == 'function_definition':
-            declarator = node.child_by_field_name('declarator')
-            if declarator:
-                name_node = self._find_function_name_node(declarator)
-                if name_node:
-                    function_name = self._get_node_text(name_node, source)
-                    function_def = self._get_node_text(node, source)
-                    self._store_function_definition(function_name, file_path, function_def)
-
-        # C# method declarations
-        elif self.language == 'c#' and node.type in ['method_declaration', 'constructor_declaration']:
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                function_name = self._get_node_text(name_node, source)
-                function_def = self._get_node_text(node, source)
-                self._store_function_definition(function_name, file_path, function_def)
-
-        # Solidity function declarations
-        elif self.language == 'solidity' and node.type == 'function_definition':
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                function_name = self._get_node_text(name_node, source)
-                function_def = self._get_node_text(node, source)
-                self._store_function_definition(function_name, file_path, function_def)
-
-        # Java method declarations
-        elif self.language == 'java' and node.type in ['method_declaration', 'constructor_declaration']:
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                function_name = self._get_node_text(name_node, source)
-                function_def = self._get_node_text(node, source)
-                self._store_function_definition(function_name, file_path, function_def)
-
-        # JavaScript function declarations and methods
-        elif self.language == 'javascript' and node.type in ['function_declaration', 'method_definition', 'function', 'arrow_function']:
-            # Handle different types of function definitions
-            if node.type == 'function_declaration':
-                name_node = node.child_by_field_name('name')
-                if name_node:
-                    function_name = self._get_node_text(name_node, source)
-                    function_def = self._get_node_text(node, source)
-                    self._store_function_definition(function_name, file_path, function_def)
-            elif node.type == 'method_definition':
-                name_node = node.child_by_field_name('name')
-                if name_node:
-                    function_name = self._get_node_text(name_node, source)
-                    function_def = self._get_node_text(node, source)
-                    self._store_function_definition(function_name, file_path, function_def)
-            elif node.type in ['function', 'arrow_function']:
-                # For variable assignments like: const foo = function() {} or const bar = () => {}
-                parent = node.parent
-                if parent and parent.type == 'variable_declarator':
-                    name_node = parent.child_by_field_name('name')
-                    if name_node:
-                        function_name = self._get_node_text(name_node, source)
-                        function_def = self._get_node_text(parent, source)
-                        self._store_function_definition(function_name, file_path, function_def)
+        # Handle function definitions by language type
+        if self._handle_function_definition(node, source, file_path):
+            pass  # Function was handled by specific language processor
 
         # Recurse into children
         for child in node.children:
             self._find_all_function_definitions(child, source, file_path)
+
+    def _handle_function_definition(self, node, source, file_path):
+        """Handle function definition for specific language and node type."""
+        handlers = {
+            'rust': self._handle_rust_function,
+            'python': self._handle_python_function,
+            'go': self._handle_go_function,
+            'c': self._handle_c_function,
+            'cpp': self._handle_cpp_function,
+            'c++': self._handle_cpp_function,
+            'objc': self._handle_objc_function,
+            'objective-c': self._handle_objc_function,
+            'c#': self._handle_csharp_function,
+            'solidity': self._handle_solidity_function,
+            'java': self._handle_java_function,
+            'javascript': self._handle_javascript_function,
+        }
+
+        handler = handlers.get(self.language)
+        if handler:
+            return handler(node, source, file_path)
+        return False
+
+    def _handle_rust_function(self, node, source, file_path):
+        if node.type == 'function_declaration':
+            return self._extract_simple_function(node, source, file_path)
+        return False
+
+    def _handle_python_function(self, node, source, file_path):
+        if node.type == 'function_definition':
+            return self._extract_simple_function(node, source, file_path)
+        return False
+
+    def _handle_go_function(self, node, source, file_path):
+        if node.type == 'function_declaration':
+            return self._extract_simple_function(node, source, file_path)
+        return False
+
+    def _handle_c_function(self, node, source, file_path):
+        if node.type == 'function_definition':
+            return self._extract_declarator_function(node, source, file_path)
+        return False
+
+    def _handle_cpp_function(self, node, source, file_path):
+        if node.type == 'function_definition':
+            return self._extract_declarator_function(node, source, file_path)
+        elif node.type == 'template_declaration':
+            return self._extract_template_function(node, source, file_path)
+        return False
+
+    def _handle_objc_function(self, node, source, file_path):
+        if node.type in ['method_declaration', 'method_definition']:
+            method_selector = self._extract_objc_method_selector(node, source)
+            if method_selector:
+                function_def = self._get_node_text(node, source)
+                self._store_function_definition(method_selector, file_path, function_def)
+                return True
+        return False
+
+    def _handle_csharp_function(self, node, source, file_path):
+        if node.type in ['method_declaration', 'constructor_declaration']:
+            return self._extract_simple_function(node, source, file_path)
+        return False
+
+    def _handle_solidity_function(self, node, source, file_path):
+        if node.type == 'function_definition':
+            return self._extract_simple_function(node, source, file_path)
+        return False
+
+    def _handle_java_function(self, node, source, file_path):
+        if node.type in ['method_declaration', 'constructor_declaration']:
+            return self._extract_simple_function(node, source, file_path)
+        return False
+
+    def _handle_javascript_function(self, node, source, file_path):
+        if node.type == 'function_declaration':
+            return self._extract_simple_function(node, source, file_path)
+        elif node.type == 'method_definition':
+            return self._extract_simple_function(node, source, file_path)
+        elif node.type in ['function', 'arrow_function']:
+            parent = node.parent
+            if parent and parent.type == 'variable_declarator':
+                name_node = parent.child_by_field_name('name')
+                if name_node:
+                    function_name = self._get_node_text(name_node, source)
+                    function_def = self._get_node_text(parent, source)
+                    self._store_function_definition(function_name, file_path, function_def)
+                    return True
+        return False
+
+    def _extract_simple_function(self, node, source, file_path):
+        """Extract function with simple name field."""
+        name_node = node.child_by_field_name('name')
+        if name_node:
+            function_name = self._get_node_text(name_node, source)
+            function_def = self._get_node_text(node, source)
+            self._store_function_definition(function_name, file_path, function_def)
+            return True
+        return False
+
+    def _extract_declarator_function(self, node, source, file_path):
+        """Extract function with declarator field (C/C++ style)."""
+        declarator = node.child_by_field_name('declarator')
+        if declarator:
+            name_node = self._find_function_name_node(declarator)
+            if name_node:
+                function_name = self._get_node_text(name_node, source)
+                function_def = self._get_node_text(node, source)
+                self._store_function_definition(function_name, file_path, function_def)
+                return True
+        return False
+
+    def _extract_template_function(self, node, source, file_path):
+        """Extract C++ template function."""
+        for child in node.children:
+            if child.type == 'function_definition':
+                declarator = child.child_by_field_name('declarator')
+                if declarator:
+                    name_node = self._find_function_name_node(declarator)
+                    if name_node:
+                        function_name = self._get_node_text(name_node, source)
+                        function_def = self._get_node_text(node, source)
+                        self._store_function_definition(function_name, file_path, function_def)
+                        return True
+        return False
 
     def _store_function_definition(self, function_name, file_path, function_def):
         """Store a function definition."""
@@ -243,151 +315,51 @@ class GraphGenerator:
         elif declarator_node.type == 'parenthesized_declarator':
             # For parenthesized declarators, recurse into the declarator
             return self._find_function_name_node(declarator_node.child_by_field_name('declarator'))
+        elif declarator_node.type == 'qualified_identifier':
+            # For C++ qualified names like namespace::function
+            name_node = declarator_node.child_by_field_name('name')
+            if name_node:
+                return name_node
+        elif declarator_node.type == 'destructor_name':
+            # For C++ destructors
+            return declarator_node
+        elif declarator_node.type == 'operator_name':
+            # For C++ operator overloads
+            return declarator_node
+        elif declarator_node.type == 'template_function':
+            # For C++ template functions
+            name_node = declarator_node.child_by_field_name('name')
+            if name_node:
+                return name_node
         return None
+
+    def _extract_objc_method_selector(self, method_node, source):
+        """Extract method selector from Objective-C method declaration/definition."""
+        selector_parts = []
+
+        # Look for selector parts in method signature
+        for child in method_node.children:
+            if child.type == 'method_selector':
+                # Extract all selector parts
+                for selector_child in child.children:
+                    if selector_child.type == 'selector':
+                        selector_parts.append(self._get_node_text(selector_child, source))
+            elif child.type == 'selector':
+                selector_parts.append(self._get_node_text(child, source))
+
+        return ''.join(selector_parts) if selector_parts else None
 
     def _find_function_calls(self, node, target_name, source, current_function='<module>'):
         """Recursively find all calls to target_name, tracking the containing function."""
         calls = []
 
-        # Update current function if we're in a function definition/declaration
-        if self.language == 'python' and node.type == 'function_definition':
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                current_function = self._get_node_text(name_node, source)
-        elif self.language == 'go' and node.type == 'function_declaration':
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                current_function = self._get_node_text(name_node, source)
-        elif self.language == 'c' and node.type == 'function_definition':
-            declarator = node.child_by_field_name('declarator')
-            if declarator:
-                name_node = self._find_function_name_node(declarator)
-                if name_node:
-                    current_function = self._get_node_text(name_node, source)
-        elif self.language == 'c#' and node.type in ['method_declaration', 'constructor_declaration']:
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                current_function = self._get_node_text(name_node, source)
-        elif self.language == 'solidity' and node.type == 'function_definition':
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                current_function = self._get_node_text(name_node, source)
-        elif self.language == 'java' and node.type in ['method_declaration', 'constructor_declaration']:
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                current_function = self._get_node_text(name_node, source)
-        elif self.language == 'javascript':
-            if node.type == 'function_declaration':
-                name_node = node.child_by_field_name('name')
-                if name_node:
-                    current_function = self._get_node_text(name_node, source)
-            elif node.type == 'method_definition':
-                name_node = node.child_by_field_name('name')
-                if name_node:
-                    current_function = self._get_node_text(name_node, source)
-            elif node.type in ['function', 'arrow_function']:
-                parent = node.parent
-                if parent and parent.type == 'variable_declarator':
-                    name_node = parent.child_by_field_name('name')
-                    if name_node:
-                        current_function = self._get_node_text(name_node, source)
+        # Update current function context
+        current_function = self._update_current_function(node, source, current_function)
 
-        # Check for calls to the target function
-        if self.language == 'python' and node.type == 'call':
-            func_node = node.child_by_field_name('function')
-            if func_node:
-                # Simple function calls
-                if func_node.type == 'identifier':
-                    call_name = self._get_node_text(func_node, source)
-                    if call_name == target_name:
-                        calls.append((node, current_function))
-                # Attribute calls (e.g., obj.method)
-                elif func_node.type == 'attribute':
-                    attr_node = func_node.child_by_field_name('attribute')
-                    if attr_node:
-                        call_name = self._get_node_text(attr_node, source)
-                        if call_name == target_name:
-                            calls.append((node, current_function))
-
-        elif self.language == 'go' and node.type == 'call_expression':
-            func_node = node.child_by_field_name('function')
-            if func_node:
-                # Simple function calls
-                if func_node.type == 'identifier':
-                    call_name = self._get_node_text(func_node, source)
-                    if call_name == target_name:
-                        calls.append((node, current_function))
-                # Package calls (e.g., pkg.Function)
-                elif func_node.type == 'selector_expression':
-                    field_node = func_node.child_by_field_name('field')
-                    if field_node:
-                        call_name = self._get_node_text(field_node, source)
-                        if call_name == target_name:
-                            calls.append((node, current_function))
-
-        elif self.language == 'c' and node.type == 'call_expression':
-            func_node = node.child_by_field_name('function')
-            if func_node and func_node.type == 'identifier':
-                call_name = self._get_node_text(func_node, source)
-                if call_name == target_name:
-                    calls.append((node, current_function))
-
-        elif self.language == 'c#' and node.type == 'invocation_expression':
-            func_node = node.child_by_field_name('function')
-            if func_node:
-                # Simple method calls
-                if func_node.type == 'identifier':
-                    call_name = self._get_node_text(func_node, source)
-                    if call_name == target_name:
-                        calls.append((node, current_function))
-                # Member access (e.g., obj.Method())
-                elif func_node.type == 'member_access_expression':
-                    name_node = func_node.child_by_field_name('name')
-                    if name_node:
-                        call_name = self._get_node_text(name_node, source)
-                        if call_name == target_name:
-                            calls.append((node, current_function))
-
-        elif self.language == 'solidity' and node.type == 'call_expression':
-            func_node = node.child_by_field_name('function')
-            if func_node:
-                # Simple function calls
-                if func_node.type == 'identifier':
-                    call_name = self._get_node_text(func_node, source)
-                    if call_name == target_name:
-                        calls.append((node, current_function))
-                # Member access (e.g., contract.function())
-                elif func_node.type == 'member_expression':
-                    property_node = func_node.child_by_field_name('property')
-                    if property_node:
-                        call_name = self._get_node_text(property_node, source)
-                        if call_name == target_name:
-                            calls.append((node, current_function))
-
-        elif self.language == 'java' and node.type == 'method_invocation':
-            name_node = node.child_by_field_name('name')
-            if name_node:
-                call_name = self._get_node_text(name_node, source)
-                if call_name == target_name:
-                    calls.append((node, current_function))
-
-        elif self.language == 'javascript':
-            # Function calls
-            if node.type == 'call_expression':
-                func_node = node.child_by_field_name('function')
-                if func_node:
-                    # Simple function calls: foo()
-                    if func_node.type == 'identifier':
-                        call_name = self._get_node_text(func_node, source)
-                        if call_name == target_name:
-                            calls.append((node, current_function))
-                    # Member expressions: obj.method()
-                    elif func_node.type == 'member_expression':
-                        property_node = func_node.child_by_field_name('property')
-                        if property_node:
-                            call_name = self._get_node_text(property_node, source)
-                            if call_name == target_name:
-                                calls.append((node, current_function))
+        # Check for function calls
+        call_result = self._check_function_call(node, target_name, source, current_function)
+        if call_result:
+            calls.append(call_result)
 
         # Recurse into children
         for child in node.children:
@@ -395,11 +367,208 @@ class GraphGenerator:
 
         return calls
 
+    def _update_current_function(self, node, source, current_function):
+        """Update the current function context based on node type and language."""
+        update_handlers = {
+            'python': lambda: self._get_simple_function_name(node, source) if node.type == 'function_definition' else None,
+            'go': lambda: self._get_simple_function_name(node, source) if node.type == 'function_declaration' else None,
+            'c': lambda: self._get_declarator_function_name(node, source) if node.type == 'function_definition' else None,
+            'cpp': lambda: self._get_declarator_function_name(node, source) if node.type == 'function_definition' else None,
+            'c++': lambda: self._get_declarator_function_name(node, source) if node.type == 'function_definition' else None,
+            'objc': lambda: self._extract_objc_method_selector(node, source) if node.type in ['method_declaration', 'method_definition'] else None,
+            'objective-c': lambda: self._extract_objc_method_selector(node, source) if node.type in ['method_declaration', 'method_definition'] else None,
+            'c#': lambda: self._get_simple_function_name(node, source) if node.type in ['method_declaration', 'constructor_declaration'] else None,
+            'solidity': lambda: self._get_simple_function_name(node, source) if node.type == 'function_definition' else None,
+            'java': lambda: self._get_simple_function_name(node, source) if node.type in ['method_declaration', 'constructor_declaration'] else None,
+            'javascript': lambda: self._get_javascript_function_name(node, source),
+        }
+
+        handler = update_handlers.get(self.language)
+        if handler:
+            new_function = handler()
+            if new_function:
+                return new_function
+        return current_function
+
+    def _get_simple_function_name(self, node, source):
+        """Get function name from simple name field."""
+        name_node = node.child_by_field_name('name')
+        return self._get_node_text(name_node, source) if name_node else None
+
+    def _get_declarator_function_name(self, node, source):
+        """Get function name from declarator field."""
+        declarator = node.child_by_field_name('declarator')
+        if declarator:
+            name_node = self._find_function_name_node(declarator)
+            return self._get_node_text(name_node, source) if name_node else None
+        return None
+
+    def _get_javascript_function_name(self, node, source):
+        """Get JavaScript function name handling various patterns."""
+        if node.type == 'function_declaration':
+            return self._get_simple_function_name(node, source)
+        elif node.type == 'method_definition':
+            return self._get_simple_function_name(node, source)
+        elif node.type in ['function', 'arrow_function']:
+            parent = node.parent
+            if parent and parent.type == 'variable_declarator':
+                name_node = parent.child_by_field_name('name')
+                return self._get_node_text(name_node, source) if name_node else None
+        return None
+
+    def _check_function_call(self, node, target_name, source, current_function):
+        """Check if node represents a call to target_name."""
+        call_handlers = {
+            'python': self._check_python_call,
+            'go': self._check_go_call,
+            'c': self._check_c_call,
+            'cpp': self._check_cpp_call,
+            'c++': self._check_cpp_call,
+            'objc': self._check_objc_call,
+            'objective-c': self._check_objc_call,
+            'c#': self._check_csharp_call,
+            'solidity': self._check_solidity_call,
+            'java': self._check_java_call,
+            'javascript': self._check_javascript_call,
+        }
+
+        handler = call_handlers.get(self.language)
+        if handler:
+            return handler(node, target_name, source, current_function)
+        return None
+
+    def _check_python_call(self, node, target_name, source, current_function):
+        if node.type == 'call':
+            func_node = node.child_by_field_name('function')
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'attribute':
+                    attr_node = func_node.child_by_field_name('attribute')
+                    if attr_node:
+                        call_name = self._get_node_text(attr_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+        return None
+
+    def _check_go_call(self, node, target_name, source, current_function):
+        if node.type == 'call_expression':
+            func_node = node.child_by_field_name('function')
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'selector_expression':
+                    field_node = func_node.child_by_field_name('field')
+                    if field_node:
+                        call_name = self._get_node_text(field_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+        return None
+
+    def _check_c_call(self, node, target_name, source, current_function):
+        if node.type == 'call_expression':
+            func_node = node.child_by_field_name('function')
+            if func_node and func_node.type == 'identifier':
+                call_name = self._get_node_text(func_node, source)
+                if call_name == target_name:
+                    return (node, current_function)
+        return None
+
+    def _check_cpp_call(self, node, target_name, source, current_function):
+        if node.type == 'call_expression':
+            func_node = node.child_by_field_name('function')
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'field_expression':
+                    field_node = func_node.child_by_field_name('field')
+                    if field_node:
+                        call_name = self._get_node_text(field_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+                elif func_node.type == 'qualified_identifier':
+                    name_node = func_node.child_by_field_name('name')
+                    if name_node:
+                        call_name = self._get_node_text(name_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+        return None
+
+    def _check_objc_call(self, node, target_name, source, current_function):
+        if node.type == 'message_expression':
+            method_selector = self._extract_objc_method_selector(node, source)
+            if method_selector and (method_selector == target_name or target_name in method_selector):
+                return (node, current_function)
+        return None
+
+    def _check_csharp_call(self, node, target_name, source, current_function):
+        if node.type == 'invocation_expression':
+            func_node = node.child_by_field_name('function')
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'member_access_expression':
+                    name_node = func_node.child_by_field_name('name')
+                    if name_node:
+                        call_name = self._get_node_text(name_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+        return None
+
+    def _check_solidity_call(self, node, target_name, source, current_function):
+        if node.type == 'call_expression':
+            func_node = node.child_by_field_name('function')
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'member_expression':
+                    property_node = func_node.child_by_field_name('property')
+                    if property_node:
+                        call_name = self._get_node_text(property_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+        return None
+
+    def _check_java_call(self, node, target_name, source, current_function):
+        if node.type == 'method_invocation':
+            name_node = node.child_by_field_name('name')
+            if name_node:
+                call_name = self._get_node_text(name_node, source)
+                if call_name == target_name:
+                    return (node, current_function)
+        return None
+
+    def _check_javascript_call(self, node, target_name, source, current_function):
+        if node.type == 'call_expression':
+            func_node = node.child_by_field_name('function')
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'member_expression':
+                    property_node = func_node.child_by_field_name('property')
+                    if property_node:
+                        call_name = self._get_node_text(property_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+        return None
+
     def _extract_arguments(self, call_node, source):
         """Extract argument values from a function call."""
         arguments = []
 
-        # All languages use a similar pattern for argument extraction
+        # Handle different argument node patterns by language
         args_node = call_node.child_by_field_name('arguments')
 
         # Some tree-sitter grammars might use different field names
@@ -409,10 +578,20 @@ class GraphGenerator:
                 args_node = call_node.child_by_field_name('arguments')
             elif self.language == 'c#':
                 args_node = call_node.child_by_field_name('argument_list')
+            elif self.language in ['cpp', 'c++']:
+                args_node = call_node.child_by_field_name('arguments')
+            elif self.language in ['objc', 'objective-c']:
+                # Objective-C message expressions have arguments as direct children
+                for child in call_node.children:
+                    if child.type == 'argument':
+                        arg_text = self._get_node_text(child, source).strip()
+                        if arg_text:
+                            arguments.append(arg_text)
+                return arguments
 
         if args_node:
             for child in args_node.children:
-                if child.type not in ['(', ')', ',']:
+                if child.type not in ['(', ')', ',', '[', ']']:
                     arg_text = self._get_node_text(child, source).strip()
                     if arg_text:
                         arguments.append(arg_text)
@@ -449,7 +628,8 @@ if __name__ == "__main__":
     parser.add_argument("repo_path", help="Path to codebase root")
     parser.add_argument("function_name", help="Function to trace callers for")
     parser.add_argument("file_path", nargs='?', help="Not used in reverse tree mode")
-    parser.add_argument("--language", "-l", default="python", help="Language to analyze (python, go, c, c#, solidity, java, javascript)")
+    parser.add_argument("--language", "-l", default="python",
+                      help="Language to analyze (python, go, c, cpp, c++, objc, objective-c, rust, verilog, move, cairo, c#, solidity, java, javascript)")
     args = parser.parse_args()
 
     gen = GraphGenerator(args.language)
