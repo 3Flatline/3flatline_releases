@@ -28,12 +28,13 @@ To configure the system, you need to create a `config.ini` file. Follow these st
 
 3. Turn on or off Exploits based on your needs.
 
-> ## Dependencies and Requirements
->
-> - [rizin](https://github.com/rizinorg) must be installed and added to the path to process assembly files.
-> - [tree-sitter](https://github.com/tree-sitter/tree-sitter)
-> - openAI API key
-> - 3Flatline API key
+### Dependencies and Requirements
+
+- [rizin](https://github.com/rizinorg) must be installed and added to the path to process assembly files.
+- [tree-sitter](https://github.com/tree-sitter/tree-sitter)
+- [ollama](https://ollama.com) is using local models
+- openAI API key
+- 3Flatline API key
 
 ## Usage
 
@@ -78,7 +79,7 @@ To use local models with Ollama:
 1. **Install Ollama** on your endpoints:
 
    ```bash
-   ./scripts/install_ollama.sh
+   ./scripts/install_models.sh
    ```
 
 2. **Update configuration** with your Ollama endpoints, do not include the port number:
@@ -88,13 +89,13 @@ To use local models with Ollama:
        endpoints=localhost,server2
    ```
 
-> ## Assembly best practices
->
-> 3Flatline will support raw binary executables. It will disassebly them for you and process them. Sometimes the disassembly can have errors and tasks will fail. If you are not getting expected results, disassemble the binary with your preffered tools and scan it as a file.
->
-> If you prefer to give 3Flatline assembly code as a flat text file, then use the normal scan file or scan directory features and point it to where your assembly files are located. If you go this route, you must add an extension to the files that matching the assembly language. For example: arm64 assembly must have the extension `arm_64`, MIPS as `mips`, and x86 as `x86`. As more assembly languages are added, this list will be updated. It is important that your dissasembly does not have the memory offsets in its output. This will reduce that accuracy of the output.
->
-> Binary processing can take some time based on the compute power of the machine you are running on. Give the application time to process the binary before you expect to see new tasks created in the dashboard.
+## Assembly best practices
+
+3Flatline will support raw binary executables. It will disassebly them for you and process them. Sometimes the disassembly can have errors and tasks will fail. If you are not getting expected results, disassemble the binary with your preffered tools and scan it as a file.
+
+If you prefer to give 3Flatline assembly code as a flat text file, then use the normal scan file or scan directory features and point it to where your assembly files are located. If you go this route, you must add an extension to the files that matching the assembly language. For example: arm64 assembly must have the extension `arm_64`, MIPS as `mips`, and x86 as `x86`. As more assembly languages are added, this list will be updated. It is important that your dissasembly does not have the memory offsets in its output. This will reduce that accuracy of the output.
+
+Binary processing can take some time based on the compute power of the machine you are running on. Give the application time to process the binary before you expect to see new tasks created in the dashboard.
 
 ## Database Management
 
@@ -106,13 +107,13 @@ When you first run 3flatline-server, it will create a database. If the sever cra
 - Scans resume from where they left off after restarts
 - Completed scans are stored persistently
 
-> ## Database Best Practices
->
-> **Rename databases** after scans to keep them organized:
->
->    ```bash
->    mv database.sqlite project1_scan_$(date +%Y%m%d).sqlite
->    ```
+### Database Best Practices
+
+**Rename databases** after scans to keep them organized:
+
+   ```bash
+   mv database.sqlite project1_scan_$(date +%Y%m%d).sqlite
+   ```
 
 # Media
 
