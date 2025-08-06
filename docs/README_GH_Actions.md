@@ -1,6 +1,6 @@
-# GitHub Actions for 3flatline Releases
+# GitHub Action for 3flatline Releases
 
-This directory contains GitHub Actions workflows that automate the release process for 3flatline.
+This directory contains a GitHub Action workflow that automates the release process for 3flatline.
 
 ## Release Workflow
 
