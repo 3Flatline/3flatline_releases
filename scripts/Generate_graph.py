@@ -137,7 +137,7 @@ class GraphGenerator:
         return False
 
     def _handle_rust_function(self, node, source, file_path):
-        if node.type == 'function_declaration':
+        if node.type == 'function_item':
             return self._extract_simple_function(node, source, file_path)
         return False
 
@@ -168,8 +168,23 @@ class GraphGenerator:
             method_selector = self._extract_objc_method_selector(node, source)
             if method_selector:
                 function_def = self._get_node_text(node, source)
-                self._store_function_definition(method_selector, file_path, function_def)
+                
+                parameters = []
+                for child in node.children:
+                    if child.type == 'parameter_declaration':
+                        parameters.append(self._get_node_text(child, source))
+                parameters_text = ", ".join(parameters) if parameters else None
+
+                return_type = None
+                return_type_node = self._find_node_of_type(node, 'method_type')
+                if return_type_node:
+                    return_type = self._get_node_text(return_type_node, source)
+                
+                self._store_function_definition(method_selector, file_path, function_def, parameters_text, return_type)
                 return True
+        elif node.type == 'function_definition':
+            # Objective-C is a superset of C, so we also handle C-style functions
+            return self._extract_declarator_function(node, source, file_path)
         return False
 
     def _handle_csharp_function(self, node, source, file_path):
@@ -199,7 +214,8 @@ class GraphGenerator:
                 if name_node:
                     function_name = self._get_node_text(name_node, source)
                     function_def = self._get_node_text(parent, source)
-                    self._store_function_definition(function_name, file_path, function_def)
+                    parameters, return_type = self._extract_function_signature(node, source)
+                    self._store_function_definition(function_name, file_path, function_def, parameters, return_type)
                     return True
         return False
 
@@ -209,7 +225,8 @@ class GraphGenerator:
         if name_node:
             function_name = self._get_node_text(name_node, source)
             function_def = self._get_node_text(node, source)
-            self._store_function_definition(function_name, file_path, function_def)
+            parameters, return_type = self._extract_function_signature(node, source)
+            self._store_function_definition(function_name, file_path, function_def, parameters, return_type)
             return True
         return False
 
@@ -221,7 +238,15 @@ class GraphGenerator:
             if name_node:
                 function_name = self._get_node_text(name_node, source)
                 function_def = self._get_node_text(node, source)
-                self._store_function_definition(function_name, file_path, function_def)
+                
+                return_type = self._get_node_text(node.child_by_field_name('type'), source) if node.child_by_field_name('type') else None
+                
+                parameters = None
+                param_list_node = self._find_node_of_type(declarator, 'parameter_list')
+                if param_list_node:
+                    parameters = self._get_node_text(param_list_node, source)
+                
+                self._store_function_definition(function_name, file_path, function_def, parameters, return_type)
                 return True
         return False
 
@@ -235,25 +260,67 @@ class GraphGenerator:
                     if name_node:
                         function_name = self._get_node_text(name_node, source)
                         function_def = self._get_node_text(node, source)
-                        self._store_function_definition(function_name, file_path, function_def)
+
+                        return_type = self._get_node_text(child.child_by_field_name('type'), source) if child.child_by_field_name('type') else None
+                        
+                        parameters = None
+                        param_list_node = self._find_node_of_type(declarator, 'parameter_list')
+                        if param_list_node:
+                            parameters = self._get_node_text(param_list_node, source)
+
+                        self._store_function_definition(function_name, file_path, function_def, parameters, return_type)
                         return True
         return False
 
-    def _store_function_definition(self, function_name, file_path, function_def):
+    def _extract_function_signature(self, node, source):
+        """Extract parameters and return type from a function node."""
+        params_text, return_text = None, None
+
+        lang_config = {
+            'python': {'params': 'parameters', 'return': 'return_type'},
+            'go': {'params': 'parameter_list', 'return': 'result'},
+            'c#': {'params': 'parameter_list', 'return': 'return_type'},
+            'solidity': {'params': 'parameters', 'return': 'returns'},
+            'java': {'params': 'formal_parameters', 'return': 'type'},
+            'javascript': {'params': 'parameters', 'return': 'return_type'},
+            'rust': {'params': 'parameters', 'return': 'return_type'},
+        }
+
+        if self.language in lang_config:
+            config = lang_config[self.language]
+            params_node = node.child_by_field_name(config['params'])
+            if params_node:
+                params_text = self._get_node_text(params_node, source)
+            
+            return_node = node.child_by_field_name(config['return'])
+            if return_node:
+                return_text = self._get_node_text(return_node, source)
+
+        return params_text, return_text
+
+    def _store_function_definition(self, function_name, file_path, function_def, parameters=None, return_type=None):
         """Store a function definition."""
         if function_name not in self._function_definitions:
             self._function_definitions[function_name] = []
 
         self._function_definitions[function_name].append({
             'file': file_path,
-            'definition': function_def
+            'code': function_def,
+            'parameters': parameters,
+            'return_type': return_type
         })
 
     def _find_function_definition(self, function_name):
         """Find the definition of a function."""
         if function_name in self._function_definitions:
-            # Return the first definition found (could be enhanced to handle multiple definitions)
-            return self._function_definitions[function_name][0]['definition']
+            defs = self._function_definitions[function_name]
+            if not defs:
+                return None
+
+            # Heuristic: the longest definition is most likely the one with a body.
+            # This handles cases where both a declaration (e.g., in a header file)
+            # and a definition (with a body) are found for the same function.
+            return max(defs, key=lambda d: len(d['code']))
         return None
 
     def _build_reverse_tree(self, target_function, target_node_id):
@@ -281,6 +348,20 @@ class GraphGenerator:
             # Recursively process the caller
             if caller_name != '<module>':  # Don't recurse on module-level calls
                 self._build_reverse_tree(caller_name, caller_id)
+
+    def _find_node_of_type(self, node, type_name):
+        """Helper to find a descendant node of a specific type."""
+        if not node:
+            return None
+        if node.type == type_name:
+            return node
+        queue = list(node.children)
+        while queue:
+            child = queue.pop(0)
+            if child.type == type_name:
+                return child
+            queue.extend(child.children)
+        return None
 
     def _find_callers(self, target_function):
         """Find all functions that call the target function."""
@@ -311,6 +392,8 @@ class GraphGenerator:
             return declarator_node
         elif declarator_node.type == 'function_declarator':
             # For C function declarators, the name is in the declarator child
+            return self._find_function_name_node(declarator_node.child_by_field_name('declarator'))
+        elif declarator_node.type == 'pointer_declarator':
             return self._find_function_name_node(declarator_node.child_by_field_name('declarator'))
         elif declarator_node.type == 'parenthesized_declarator':
             # For parenthesized declarators, recurse into the declarator
@@ -381,6 +464,7 @@ class GraphGenerator:
             'solidity': lambda: self._get_simple_function_name(node, source) if node.type == 'function_definition' else None,
             'java': lambda: self._get_simple_function_name(node, source) if node.type in ['method_declaration', 'constructor_declaration'] else None,
             'javascript': lambda: self._get_javascript_function_name(node, source),
+            'rust': lambda: self._get_simple_function_name(node, source) if node.type == 'function_item' else None,
         }
 
         handler = update_handlers.get(self.language)
@@ -430,6 +514,7 @@ class GraphGenerator:
             'solidity': self._check_solidity_call,
             'java': self._check_java_call,
             'javascript': self._check_javascript_call,
+            'rust': self._check_rust_call,
         }
 
         handler = call_handlers.get(self.language)
@@ -453,6 +538,28 @@ class GraphGenerator:
                             return (node, current_function)
         return None
 
+    def _check_rust_call(self, node, target_name, source, current_function):
+        if node.type == 'call_expression':
+            func_node = node.child_by_field_name('function')
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'field_expression':
+                    field_node = func_node.child_by_field_name('field')
+                    if field_node:
+                        call_name = self._get_node_text(field_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+                elif func_node.type == 'scoped_identifier':
+                    name_node = func_node.child_by_field_name('name')
+                    if name_node:
+                        call_name = self._get_node_text(name_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
+        return None
+
     def _check_go_call(self, node, target_name, source, current_function):
         if node.type == 'call_expression':
             func_node = node.child_by_field_name('function')
@@ -472,10 +579,17 @@ class GraphGenerator:
     def _check_c_call(self, node, target_name, source, current_function):
         if node.type == 'call_expression':
             func_node = node.child_by_field_name('function')
-            if func_node and func_node.type == 'identifier':
-                call_name = self._get_node_text(func_node, source)
-                if call_name == target_name:
-                    return (node, current_function)
+            if func_node:
+                if func_node.type == 'identifier':
+                    call_name = self._get_node_text(func_node, source)
+                    if call_name == target_name:
+                        return (node, current_function)
+                elif func_node.type == 'field_expression':
+                    field_node = func_node.child_by_field_name('field')
+                    if field_node:
+                        call_name = self._get_node_text(field_node, source)
+                        if call_name == target_name:
+                            return (node, current_function)
         return None
 
     def _check_cpp_call(self, node, target_name, source, current_function):
@@ -505,7 +619,9 @@ class GraphGenerator:
             method_selector = self._extract_objc_method_selector(node, source)
             if method_selector and (method_selector == target_name or target_name in method_selector):
                 return (node, current_function)
-        return None
+        
+        # Objective-C is a superset of C, so also check for C-style function calls
+        return self._check_c_call(node, target_name, source, current_function)
 
     def _check_csharp_call(self, node, target_name, source, current_function):
         if node.type == 'invocation_expression':
@@ -606,14 +722,18 @@ class GraphGenerator:
         node = {
             "id": node_id,
             "function": function_name,
-            "arguments": arguments
+            "arguments": arguments,
+            "parameters": None,
+            "return_type": None
         }
 
         if file_path:
             node["file"] = file_path
 
         if function_def:
-            node["definition"] = function_def
+            node["code"] = function_def.get('code')
+            node["parameters"] = function_def.get('parameters')
+            node["return_type"] = function_def.get('return_type')
 
         self.graph["nodes"].append(node)
         return node_id
