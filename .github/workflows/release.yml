@@ -69,24 +69,6 @@ jobs:
                     README.md \
                     -x "*.git*" "*.github*" "*.DS_Store" "*.gitignore"
 
-                  # Create frontend package if it exists
-                  if [ -d "frontend" ]; then
-                    log "Creating package" "Building 3flatline-frontend.zip"
-                    zip -r release-assets/3flatline-frontend.zip frontend \
-                      -x "frontend/*.git*" "frontend/*.github*" "frontend/*.DS_Store" "frontend/*.gitignore" "frontend/node_modules/**/*"
-                  else
-                    log "Skipping" "Frontend directory not found, skipping frontend package"
-                  fi
-
-                  # Create a scripts package if needed
-                  if [ -d "scripts" ]; then
-                    log "Creating package" "Building 3flatline-scripts.zip"
-                    zip -r release-assets/3flatline-scripts.zip scripts \
-                      -x "scripts/*.git*" "scripts/*.github*" "scripts/*.DS_Store" "scripts/*.gitignore"
-                  else
-                    log "Skipping" "Scripts directory not found, skipping scripts package"
-                  fi
-
                   # Verify the created packages
                   log "Verifying" "Listing created packages:"
                   ls -la release-assets/
@@ -117,8 +99,14 @@ jobs:
                       - 3flatline Server and CLI binaries for Mac (ARM) and Linux (x86_64)
                       - Example configuration file
                       - Documentation
-                      - Scripts (if applicable)
-                      - Frontend components (if applicable)
+                      - Scripts
+                      - Frontend components
+
+                      ## Release Notes:
+
+                      - various bug fixes
+                      - NEW FEATURE: cross file semantic analysis.
+                      - NEW FEATURE: native support for raw binaries.
 
                       ### Installation Instructions
 
@@ -127,8 +115,9 @@ jobs:
                       3. Make sure the binaries are executable: `chmod +x 3flatline-cli_* 3flatline-server_*`
                       4. Copy the example config: `cp config.ini.example config.ini`
                       5. Edit the config file with your API keys
-                      6. Run the server: `./3flatline-server config.ini`
-                      7. Run the CLI: `./3flatline-cli`
-                      8. Visit `localhost:7270` to access the web interface
+                      6. setup the python venv with install_venv.sh
+                      7. Run the server: `./3flatline-server -config config.ini`
+                      8. Run the CLI: `./3flatline-cli`
+                      9. Visit `localhost:7270` to access the web interface
 
                       For more details, see the README.md file included in the package.
