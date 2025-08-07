@@ -35,6 +35,7 @@ To configure the system, you need to create a `config.ini` file. Follow these st
 - [ollama](https://ollama.com) is using local models
 - openAI API key
 - 3Flatline API key
+- Python 3.10+
 
 ## Usage
 
