@@ -72,11 +72,11 @@ curl -X GET "http://localhost:7270/api/export/netsage" -o export.json
 
 ## Local Models
 
-If you want to keep the model local, then run the `install_ollama.sh` script on every endpoint you want to host a model on. Then be sure to update the `config.ini` file with a list of endpoints that you have ollama running on.
+If you want to keep the model local, then run the `install_models.sh` script on every endpoint you want to host a model on. Then be sure to update the `config.ini` file with a list of endpoints that you have ollama running on.
 
 To use local models with Ollama:
 
-1. **Install Ollama** on your endpoints:
+1. **Install Ollama Models** on your endpoints:
 
    ```bash
    ./scripts/install_models.sh
@@ -234,6 +234,13 @@ When you first run 3flatline-server, it will create a database. If the sever cra
 
 Submit bugs at : https://github.com/3Flatline/3flatline_releases
 
+**Project Board** [here](https://github.com/orgs/3Flatline/projects/5)
+
+
 ## Known issues:
+
+1. Result viewer in the CLI is not displaying properly
 1. The analysis process is constantly creating and deleting tasks as it moves from coarse to fine grained analysis. This reflects in the CLI progress bar sometimes saying 100% complete before the machine creates more tasks.
-1. With exploit/POC feature off, false positives are around 20%. With exploit/POC turned on, False Positives are 0. You are expected to run the generated POCs to determine which vulnerabilies reports are accurate and which are not.
+1. With exploit/POC feature off, false positives are around 20%. With exploit/POC turned on, False Positives are 0%. You are expected to run the generated POCs to determine which vulnerabilies reports are accurate and which are not.
+
+
