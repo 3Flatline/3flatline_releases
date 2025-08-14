@@ -31,15 +31,8 @@ chmod +x 3flatline-server
 COPY scripts/ /app/scripts/
 RUN uv pip install /app/scripts/
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 # Expose web UI port from README
 EXPOSE 7270
 
-# Set entrypoint
-ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Default command to run the server
-CMD ["./3flatline-server", "-config", "config.ini"]
+# Default command to run the server. This will create config.ini from environment variables and then start the server.
+CMD ["/bin/sh", "-c", "echo \"[openai]\napikey = ${OPENAI_API_KEY}\n\n[wintermute-apikey]\nkey = ${WINTERMUTE_API_KEY}\n\n[database]\nfile = ${DATABASE_FILE:-database.sqlite}\n\n[loadbalancer]\nport = ${LOADBALANCER_PORT:-11435}\nendpoints = ${LOADBALANCER_ENDPOINTS:-0.0.0.0}\n\n[security]\nno_exploits = ${SECURITY_NOEXPLOITS:-true}\" > config.ini && exec ./3flatline-server -config config.ini"]
