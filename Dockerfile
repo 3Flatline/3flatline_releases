@@ -20,12 +20,26 @@ RUN npm install -g tree-sitter-cli
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Download and extract the latest 3flatline release for linux
-RUN LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/3Flatline/3flatline_releases/releases/latest | jq -r '.assets[] | select(.name | test(".zip$")) | .browser_download_url' | head -n1) && \
-echo "Downloading release from $LATEST_RELEASE_URL" && \
-curl -sL $LATEST_RELEASE_URL | unzip  && \
-mv 3flatline-server_x86_64_linux 3flatline-server && \
-chmod +x 3flatline-server
+# Add build argument for target architecture
+ARG TARGETARCH
+
+# Download and extract the latest 3flatline release for linux based on architecture
+RUN set -e; \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+        ARCH_STR="x86_64"; \
+    elif [ "${TARGETARCH}" = "arm64" ]; then \
+        ARCH_STR="arm"; \
+    else \
+        echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1; \
+    fi; \
+    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/3Flatline/3flatline_releases/releases/latest | jq -r ".assets[] | select(.name | contains(\"linux\") and contains(\"${ARCH_STR}\") and endswith(\".zip\")) | .browser_download_url" | head -n 1); \
+    if [ -z "${LATEST_RELEASE_URL}" ]; then \
+        echo "Could not find a release for linux/${TARGETARCH}" >&2; exit 1; \
+    fi; \
+    echo "Downloading release from ${LATEST_RELEASE_URL}"; \
+    curl -sL "${LATEST_RELEASE_URL}" | unzip; \
+    mv "3flatline-server_${ARCH_STR}_linux" 3flatline-server; \
+    chmod +x 3flatline-server
 
 # Copy python scripts and install dependencies
 COPY scripts/ /app/scripts/
