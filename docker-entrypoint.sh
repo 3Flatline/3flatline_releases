@@ -6,18 +6,18 @@ cat > config.ini <<EOF
 [openai]
 apikey = ${OPENAI_API_KEY}
 
-[wintermute]
-apikey = ${WINTERMUTE_API_KEY}
+[wintermute-apikey]
+key = ${WINTERMUTE_API_KEY}
 
 [database]
 file = ${DATABASE_FILE:-database.sqlite}
 
 [loadbalancer]
-port = ${LOADBALANCER_PORT:-7270}
-endpoints = ${LOADBALANCER_ENDPOINTS:-}
+port = ${LOADBALANCER_PORT:-11435}
+endpoints = ${LOADBALANCER_ENDPOINTS:-0.0.0.0}
 
 [security]
-noexploits = ${SECURITY_NOEXPLOITS:-false}
+no_exploits = ${SECURITY_NOEXPLOITS:-true}
 EOF
 
 # Execute the command passed to the script
