@@ -42,8 +42,11 @@ RUN set -e; \
 # Install python dependencies from the release archive
 RUN uv pip install /app/scripts/
 
+# Copy config file
+COPY config.ini.example /app/config.ini
+
 # Expose web UI port from README
 EXPOSE 7270
 
-# Default command to run the server. This will create config.ini from environment variables and then start the server.
-CMD ["/bin/sh", "-c", "echo \"[openai]\napikey = ${OPENAI_API_KEY}\n\n[wintermute-apikey]\nkey = ${WINTERMUTE_API_KEY}\n\n[database]\nfile = ${DATABASE_FILE:-database.sqlite}\n\n[loadbalancer]\nport = ${LOADBALANCER_PORT:-11435}\nendpoints = ${LOADBALANCER_ENDPOINTS:-0.0.0.0}\n\n[security]\nno_exploits = ${SECURITY_NOEXPLOITS:-true}\" > config.ini && exec ./3flatline-server -config config.ini"]
+# Default command to run the server. This will populate config.ini from environment variables and then start the server.
+CMD ["/bin/sh", "-c", "sed -i \"s|^    apikey=.*|    apikey=${OPENAI_API_KEY}|\" config.ini && sed -i \"s|^    key=.*|    key=${WINTERMUTE_API_KEY}|\" config.ini && sed -i \"s|^    file=.*|    file=${DATABASE_FILE:-database.sqlite}|\" config.ini && sed -i \"s|^    port=.*|    port=${LOADBALANCER_PORT:-11435}|\" config.ini && sed -i \"s|^    endpoints=.*|    endpoints=${LOADBALANCER_ENDPOINTS:-0.0.0.0}|\" config.ini && sed -i \"s|^    no_exploits=.*|    no_exploits=${SECURITY_NOEXPLOITS:-true}|\" config.ini && exec ./3flatline-server -config config.ini"]
