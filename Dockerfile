@@ -17,7 +17,6 @@ RUN npm install -g tree-sitter-cli
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Add build argument for target architecture
 ARG TARGETARCH
