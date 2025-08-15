@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
+# Add uv to the PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 # Install tree-sitter-cli
 RUN npm install -g tree-sitter-cli
 
