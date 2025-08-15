@@ -34,7 +34,8 @@ RUN set -e; \
     chmod +x 3flatline-server
 
 # Install python dependencies from the release archive
-RUN pip install -r scripts/requirements.txt
+RUN pip install tree-sitter>=0.25.0
+RUN pip install tree-sitter-language-pack>=0.9.0
 
 # Create config file from example
 RUN cp config.ini.example config.ini
