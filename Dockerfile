@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     jq \
     tar \
     npm \
-    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install tree-sitter-cli
