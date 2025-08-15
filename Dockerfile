@@ -23,26 +23,24 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Add build argument for target architecture
 ARG TARGETARCH
 
-# Download and extract the latest 3flatline release for linux based on architecture
+# Download and extract the latest 3flatline release
 RUN set -e; \
+    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/3Flatline/3flatline_releases/releases/latest | jq -r '.assets[] | select(.name | endswith(".tar.gz")) | .browser_download_url'); \
+    if [ -z "${LATEST_RELEASE_URL}" ]; then \
+        echo "Could not find a release tarball" >&2; exit 1; \
+    fi; \
+    echo "Downloading release from ${LATEST_RELEASE_URL}"; \
+    curl -sL "${LATEST_RELEASE_URL}" | tar -xzv; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
-        ARCH_STR="x86_64"; \
+        mv 3flatline-server_x86_64_linux 3flatline-server; \
     elif [ "${TARGETARCH}" = "arm64" ]; then \
-        ARCH_STR="arm"; \
+        echo "Unsupported architecture for linux: arm64. No linux arm64 binary available." >&2; exit 1; \
     else \
         echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1; \
     fi; \
-    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/3Flatline/3flatline_releases/releases/latest | jq -r ".assets[] | select(.name | contains(\"linux\") and contains(\"${ARCH_STR}\") and endswith(\".zip\")) | .browser_download_url" | head -n 1); \
-    if [ -z "${LATEST_RELEASE_URL}" ]; then \
-        echo "Could not find a release for linux/${TARGETARCH}" >&2; exit 1; \
-    fi; \
-    echo "Downloading release from ${LATEST_RELEASE_URL}"; \
-    curl -sL "${LATEST_RELEASE_URL}" | unzip; \
-    mv "3flatline-server_${ARCH_STR}_linux" 3flatline-server; \
     chmod +x 3flatline-server
 
-# Copy python scripts and install dependencies
-COPY scripts/ /app/scripts/
+# Install python dependencies from the release archive
 RUN uv pip install /app/scripts/
 
 # Expose web UI port from README
