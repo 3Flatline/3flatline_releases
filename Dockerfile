@@ -23,12 +23,12 @@ ARG TARGETARCH
 
 # Download and extract the latest 3flatline release
 RUN set -e; \
-    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/3Flatline/3flatline_releases/releases/latest | jq -r '.assets[] | select(.name | endswith(".tar.gz")) | .browser_download_url'); \
-    if [ -z "${LATEST_RELEASE_URL}" ]; then \
-        echo "Could not find a release tarball" >&2; exit 1; \
+    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/3Flatline/3flatline_releases/releases/latest | jq -r '.tarball_url'); \
+    if [ -z "${LATEST_RELEASE_URL}" ] || [ "${LATEST_RELEASE_URL}" = "null" ]; then \
+        echo "Could not find a release tarball URL" >&2; exit 1; \
     fi; \
     echo "Downloading release from ${LATEST_RELEASE_URL}"; \
-    curl -sL "${LATEST_RELEASE_URL}" | tar -xzv; \
+    curl -sL "${LATEST_RELEASE_URL}" | tar -xzv --strip-components=1; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
         mv 3flatline-server_x86_64_linux 3flatline-server; \
     elif [ "${TARGETARCH}" = "arm64" ]; then \
