@@ -10,13 +10,12 @@ RUN apt-get update && apt-get install -y \
     jq \
     tar \
     npm \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install tree-sitter-cli
 RUN npm install -g tree-sitter-cli
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Add build argument for target architecture
 ARG TARGETARCH
