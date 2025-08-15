@@ -1,0 +1,3 @@
+tree-sitter>=0.25.0
+tree-sitter-language-pack>=0.9.0
+z3-solver>=1
