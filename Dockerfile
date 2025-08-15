@@ -21,7 +21,7 @@ RUN pip install tree-sitter>=0.25.0 tree-sitter-language-pack>=0.9.0
 ARG TARGETARCH
 
 # Copy server binaries to ensure they are not excluded by .dockerignore
-COPY 3flatline-server_x86_64_linux 3flatline-server_arm64_linux /app/
+COPY 3flatline-server_*_linux /app/
 
 # Copy application files
 COPY . /app
