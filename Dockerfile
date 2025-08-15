@@ -34,7 +34,7 @@ RUN set -e; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
         mv 3flatline-server_x86_64_linux 3flatline-server; \
     elif [ "${TARGETARCH}" = "arm64" ]; then \
-        echo "Unsupported architecture for linux: arm64. No linux arm64 binary available." >&2; exit 1; \
+        mv 3flatline-server_arm64_linux 3flatline-server; \
     else \
         echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1; \
     fi; \
