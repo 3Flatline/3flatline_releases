@@ -17,17 +17,15 @@ RUN apt-get update && apt-get install -y \
 RUN pip install tree-sitter>=0.25.0 tree-sitter-language-pack>=0.9.0
 
 
-# Add build argument for target architecture
-ARG TARGETARCH
-
-# Select and prepare the server binary for the target architecture
-RUN set -e; \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
+# Determine architecture and select server binary
+RUN ARCH=$(dpkg --print-architecture) && \
+    set -e; \
+    if [ "${ARCH}" = "amd64" ]; then \
         mv 3flatline-server_x86_64_linux 3flatline-server; \
-    elif [ "${TARGETARCH}" = "arm64" ]; then \
+    elif [ "${ARCH}" = "arm64" ]; then \
         mv 3flatline-server_arm64_linux 3flatline-server; \
     else \
-        echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1; \
+        echo "Unsupported architecture: ${ARCH}" >&2; exit 1; \
     fi; \
     chmod +x 3flatline-server
 
