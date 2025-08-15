@@ -20,12 +20,6 @@ RUN pip install tree-sitter>=0.25.0 tree-sitter-language-pack>=0.9.0
 # Add build argument for target architecture
 ARG TARGETARCH
 
-# Copy server binaries to ensure they are not excluded by .dockerignore
-COPY 3flatline-server_*_linux /app/
-
-# Copy application files
-COPY . /app
-
 # Select and prepare the server binary for the target architecture
 RUN set -e; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
