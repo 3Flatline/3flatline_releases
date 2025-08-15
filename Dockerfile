@@ -4,16 +4,17 @@ FROM python:3.12-slim
 # Set working directory
 WORKDIR /app
 
-# Install necessary tools
+# Install necessary tools and dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     jq \
     tar \
     npm \
+    && npm install -g tree-sitter-cli \
     && rm -rf /var/lib/apt/lists/*
 
-# Install tree-sitter-cli
-RUN npm install -g tree-sitter-cli
+# Install python dependencies
+RUN pip install tree-sitter>=0.25.0 tree-sitter-language-pack>=0.9.0
 
 
 # Add build argument for target architecture
@@ -33,9 +34,6 @@ RUN set -e; \
     fi; \
     chmod +x 3flatline-server
 
-# Install python dependencies from the release archive
-RUN pip install tree-sitter>=0.25.0
-RUN pip install tree-sitter-language-pack>=0.9.0
 
 # Create config file from example
 RUN cp config.ini.example config.ini
