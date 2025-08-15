@@ -19,14 +19,11 @@ RUN npm install -g tree-sitter-cli
 # Add build argument for target architecture
 ARG TARGETARCH
 
-# Download and extract the latest 3flatline release
+# Copy application files
+COPY . /app
+
+# Select and prepare the server binary for the target architecture
 RUN set -e; \
-    LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/3Flatline/3flatline_releases/releases/latest | jq -r '.tarball_url'); \
-    if [ -z "${LATEST_RELEASE_URL}" ] || [ "${LATEST_RELEASE_URL}" = "null" ]; then \
-        echo "Could not find a release tarball URL" >&2; exit 1; \
-    fi; \
-    echo "Downloading release from ${LATEST_RELEASE_URL}"; \
-    curl -sL "${LATEST_RELEASE_URL}" | tar -xzv --strip-components=1; \
     if [ "${TARGETARCH}" = "amd64" ]; then \
         mv 3flatline-server_x86_64_linux 3flatline-server; \
     elif [ "${TARGETARCH}" = "arm64" ]; then \
@@ -39,8 +36,8 @@ RUN set -e; \
 # Install python dependencies from the release archive
 RUN pip install -r scripts/requirements.txt
 
-# Copy config file
-COPY config.ini.example /app/config.ini
+# Create config file from example
+RUN cp config.ini.example config.ini
 
 # Expose web UI port from README
 EXPOSE 7270
