@@ -8,21 +8,15 @@ cd "$(dirname "$0")"
 
 VENV_DIR=".venv"
 
-if ! command -v uv &> /dev/null; then
-    echo "Error: uv command not found. Please install uv first."
-    echo "See: https://github.com/astral-sh/uv"
-    exit 1
-fi
-
 if [ -d "$VENV_DIR" ]; then
     echo "Virtual environment already exists at scripts/.venv"
 else
     echo "Creating virtual environment at scripts/.venv..."
-    uv venv "$VENV_DIR"
+    python3 -m venv "$VENV_DIR"
 fi
 
 echo "Installing dependencies..."
-uv pip sync uv.lock
+"$VENV_DIR/bin/pip" install .
 
 echo
 echo "Setup complete."

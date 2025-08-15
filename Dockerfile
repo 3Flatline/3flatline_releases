@@ -10,11 +10,7 @@ RUN apt-get update && apt-get install -y \
     jq \
     tar \
     npm \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Add uv to the PATH
-ENV PATH="/root/.cargo/bin:${PATH}"
+    && rm -rf /var/lib/apt/lists/*
 
 # Install tree-sitter-cli
 RUN npm install -g tree-sitter-cli
@@ -41,7 +37,7 @@ RUN set -e; \
     chmod +x 3flatline-server
 
 # Install python dependencies from the release archive
-RUN uv pip install scripts
+RUN pip install ./scripts
 
 # Copy config file
 COPY config.ini.example /app/config.ini
