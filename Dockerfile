@@ -38,7 +38,7 @@ RUN set -e; \
     chmod +x 3flatline-server
 
 # Install python dependencies from the release archive
-RUN uv pip install /app/scripts/
+RUN uv pip install scripts/pyproject.toml
 
 # Copy config file
 COPY config.ini.example /app/config.ini
