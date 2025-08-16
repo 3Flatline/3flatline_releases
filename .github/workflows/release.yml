@@ -29,7 +29,7 @@ jobs:
                   chmod +x 3flatline-cli_arm_mac 3flatline-cli_x86_64_linux 3flatline-server_arm_mac 3flatline-server_x86_64_linux
                   cp 3flatline-cli_arm_mac release-assets/
                   cp 3flatline-cli_x86_64_linux release-assets/
-                  cp 3flatline-cli_amd64_linux release-assets/
+                  cp 3flatline-cli_arm64_linux release-assets/
                   tar -czvf release-assets/3flatline-${{ github.ref_name }}.tar.gz --exclude='./.git' --exclude='./.github' --exclude='./release-assets' .
                   ls -la release-assets/
 
@@ -44,7 +44,7 @@ jobs:
                     release-assets/3flatline-${{ github.ref_name }}.tar.gz
                     release-assets/3flatline-cli_arm_mac
                     release-assets/3flatline-cli_x86_64_linux
-                    release-assets/3flatline-cli_amd64_linux
+                    release-assets/3flatline-cli_arm64_linux
                   # Automatically generates release notes from pull requests and commits
                   generateReleaseNotes: true
                   # Draft release (false means it's published immediately)
