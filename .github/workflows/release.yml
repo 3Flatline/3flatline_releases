@@ -29,6 +29,7 @@ jobs:
                   chmod +x 3flatline-cli_arm_mac 3flatline-cli_x86_64_linux 3flatline-server_arm_mac 3flatline-server_x86_64_linux
                   cp 3flatline-cli_arm_mac release-assets/
                   cp 3flatline-cli_x86_64_linux release-assets/
+                  cp 3flatline-cli_amd64_linux release-assets/
                   tar -czvf release-assets/3flatline-${{ github.ref_name }}.tar.gz --exclude='./.git' --exclude='./.github' --exclude='./release-assets' .
                   ls -la release-assets/
 
@@ -57,16 +58,3 @@ jobs:
                   body: |
                       ## 3flatline Release ${{ github.ref_name }}
 
-                      This release contains a source code archive of the repository.
-
-                      ## Release Notes:
-
-                      - various bug fixes
-                      - NEW FEATURE: cross file semantic analysis.
-                      - NEW FEATURE: native support for raw binaries.
-
-                      ### Installation Instructions
-
-                      1. Download the `3flatline-${{ github.ref_name }}.tar.gz` file.
-                      2. Extract the files: `tar -xzvf 3flatline-${{ github.ref_name }}.tar.gz`
-                      3. Follow the instructions in `README.md` to run the application.
