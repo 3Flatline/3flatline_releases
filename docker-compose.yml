@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  3flatline:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "7270:7270"
+    volumes:
+      # Mounts a local directory for data persistence (e.g., database)
+      - ./3flatline_data:/app/data
+    env_file:
+      - .env
+    environment:
+      # Ensure the database is stored in the persistent volume
+      - DATABASE_FILE=/app/data/database.sqlite

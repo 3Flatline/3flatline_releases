@@ -1,0 +1,15 @@
+# Exclude files from the Docker build context to improve build speed and security.
+.git
+.gitignore
+.dockerignore
+.env
+docker-compose.yml
+3flatline_data/
+Dockerfile
+
+# From .gitignore
+.DS_Store
+*.DS_Store
+.aider*
+scripts/.venv/
+uv.lock

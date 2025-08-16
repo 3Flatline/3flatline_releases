@@ -3,3 +3,7 @@
 .aider*
 scripts/.venv/
 uv.lock
+
+# Docker-specific
+.env
+3flatline_data/
