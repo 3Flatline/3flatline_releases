@@ -43,6 +43,7 @@ jobs:
                     release-assets/3flatline-${{ github.ref_name }}.tar.gz
                     release-assets/3flatline-cli_arm_mac
                     release-assets/3flatline-cli_x86_64_linux
+                    release-assets/3flatline-cli_amd64_linux
                   # Automatically generates release notes from pull requests and commits
                   generateReleaseNotes: true
                   # Draft release (false means it's published immediately)

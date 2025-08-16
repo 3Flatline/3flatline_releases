@@ -1,0 +1,11 @@
+# Copy this file to .env and fill in your values.
+# Do not commit .env to version control.
+
+# Your OpenAI API key
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Your Wintermute API key
+WINTERMUTE_API_KEY=your_wintermute_api_key_here
+
+# Set to "false" to enable exploit generation, "true" to disable.
+SECURITY_NOEXPLOITS=true

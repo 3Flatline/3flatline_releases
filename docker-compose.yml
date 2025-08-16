@@ -10,7 +10,7 @@ services:
       # Mounts a local directory for data persistence (e.g., database)
       - ./3flatline_data:/app/data
     env_file:
-      - .env
+      - env
     environment:
       # Ensure the database is stored in the persistent volume
       - DATABASE_FILE=/app/data/database.sqlite
