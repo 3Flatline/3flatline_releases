@@ -7,11 +7,18 @@ WORKDIR /app
 # Install necessary tools and dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    meson \
     jq \
     tar \
     npm \
     && npm install -g tree-sitter-cli \
     && rm -rf /var/lib/apt/lists/*
+
+# setup and install rizin
+RUN git clone https://github.com/rizinorg/rizin
+RUN meson setup build
+RUN meson compile -C build
+RUN meson install -C build
 
 # Install python dependencies
 RUN pip install tree-sitter tree-sitter-language-pack
