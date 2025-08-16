@@ -8,7 +8,37 @@ Release repositiy and bug tracker for 3flatline cli, server, and community editi
 
 ![ScreenShot](./media/screenshot.png)
 
-## Install Instructions
+## Docker Install Instructions
+
+To run 3Flatline in a Docker container, you can build the image and then run it with the necessary environment variables for configuration.
+
+1.  Clone the repository:
+
+    ```bash
+    git clone https://github.com/your-repo/3flatline.git
+    cd 3flatline
+    ```
+
+2.  Build the Docker images:
+
+    ```bash
+    docker-compose build
+    ```
+
+3. Run the container:
+
+You must provide your OpenAI and Wintermute (same as your 3Flatline) API keys as environment variables.
+
+```bash
+docker run -p 7270:7270 \
+  -e OPENAI_API_KEY='your_openai_api_key' \
+  -e WINTERMUTE_API_KEY='your_3flatline_api_key' \
+  3flatline
+```
+
+4. Run the cli with the ip of your server
+
+## Local Install Instructions
 
 3Flatline consists of 3 files: the server, the server config, and the cli.
 
@@ -32,10 +62,9 @@ To configure the system, you need to create a `config.ini` file. Follow these st
 
 - [rizin](https://github.com/rizinorg) must be installed and added to the path to process assembly files.
 - [tree-sitter](https://github.com/tree-sitter/tree-sitter)
-- [ollama](https://ollama.com) is using local models
+- [ollama](https://ollama.com) if using local models
 - openAI API key
 - 3Flatline API key
-- Python 3.10+
 
 ## Usage
 
@@ -235,13 +264,9 @@ When you first run 3flatline-server, it will create a database. If the sever cra
 
 Submit bugs at : https://github.com/3Flatline/3flatline_releases
 
-**Project Board** [here](https://github.com/orgs/3Flatline/projects/5)
-
-
 ## Known issues:
 
-1. Result viewer in the CLI is not displaying properly
+**Project Board** [here](https://github.com/orgs/3Flatline/projects/5)
+
 1. The analysis process is constantly creating and deleting tasks as it moves from coarse to fine grained analysis. This reflects in the CLI progress bar sometimes saying 100% complete before the machine creates more tasks.
 1. With exploit/POC feature off, false positives are around 20%. With exploit/POC turned on, False Positives are 0%. You are expected to run the generated POCs to determine which vulnerabilies reports are accurate and which are not.
-
-
